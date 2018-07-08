@@ -317,7 +317,7 @@ class Deposit private(val baseDir: File, bag: Bag, properties: DepositProperties
     withDepositProperties(newProperties)
   }
 
-  def write(): Try[Unit] = {
+  def save(): Try[Unit] = {
     for {
       _ <- bag.save()
       _ <- properties.save(baseDir / depositPropertiesName)
