@@ -190,7 +190,6 @@ class DepositSpec extends TestSupportFixture
         bagDir.toJava should exist
         deposit.bag.baseDir shouldBe bagDir
         deposit.baseDir.list.filter(_.isDirectory).toList should contain only bagDir
-      case Failure(e) => fail(e)
     }
   }
 
@@ -324,11 +323,39 @@ class DepositSpec extends TestSupportFixture
     }
   }
 
-  "read" should "load a valid deposit on filesystem into a Deposit object" in pending
+  "read" should "load a valid deposit on filesystem into a Deposit object" in {
+    val deposit = simpleDeposit()
 
-  it should "fail when a deposit does not contain a directory (which might classify as a bag)" in pending
+    // this method is actually tested in all other methods, since it is used to read all test bags
+    // therefore just a single simple check here
+    deposit.baseDir shouldBe simpleDepositDir
+  }
 
-  it should "fail when a deposit contains multiple directories (which might classify as a bag)" in pending
+  it should "fail when a deposit does not contain a directory (which might classify as a bag)" in {
+    val depositDir = simpleDepositDir
+    val bagDir = depositDir / "1c2f78a1-26b8-4a40-a873-1073b9f3a56a"
+
+    bagDir.toJava should exist
+    bagDir.delete()
+    bagDir.toJava shouldNot exist
+
+    inside(Deposit.read(depositDir)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"$depositDir is not a deposit: it contains no directories"
+    }
+  }
+
+  it should "fail when a deposit contains multiple directories (which might classify as a bag)" in {
+    val depositDir = simpleDepositDir
+    depositDir / "other-directory" createDirectory()
+
+    depositDir.list.count(_.isDirectory) shouldBe 2
+
+    inside(Deposit.read(depositDir)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"$depositDir is not a deposit: it contains multiple directories"
+    }
+  }
 
   "baseDir" should "return the deposit's base directory" in {
     val deposit = simpleDeposit()
