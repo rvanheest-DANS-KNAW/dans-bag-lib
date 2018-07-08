@@ -2,12 +2,17 @@ package nl.knaw.dans.bag.v0
 
 import java.util.UUID
 
-import nl.knaw.dans.bag.{ FileSystemSupport, FixDateTimeNow, TestDeposits, TestSupportFixture }
+import nl.knaw.dans.bag._
 import org.joda.time.{ DateTime, DateTimeZone }
 
 import scala.language.implicitConversions
+import scala.util.Success
 
-class DepositSpec extends TestSupportFixture with FileSystemSupport with TestDeposits with FixDateTimeNow {
+class DepositSpec extends TestSupportFixture
+  with FileSystemSupport
+  with TestDeposits
+  with FixDateTimeNow
+  with Lipsum {
 
   "empty" should "create a deposit directory with a bag directory named after the bagId" in pending
 
@@ -371,7 +376,55 @@ class DepositSpec extends TestSupportFixture with FileSystemSupport with TestDep
     resultDeposit.stageState shouldBe empty
   }
 
-  "save" should "write changes made to the Bag object in the bag to the deposit on file system" in pending
+  "save" should "write changes made to the Bag object in the bag to the deposit on file system" in {
+    val deposit = simpleDeposit()
+    val newFile = testDir / "new-file" writeText lipsum(5)
+    val relativeDest: RelativePath = _ / "abc.txt"
+    val dest = relativeDest(deposit.bag.data)
+    val sha1Checksum = newFile.sha1.toLowerCase
 
-  it should "write changes made to the DepositProperties to the deposit on file system" in pending
+    dest.toJava shouldNot exist
+    deposit.bag.payloadManifestAlgorithms should contain only ChecksumAlgorithm.SHA1
+    deposit.bag.payloadManifests(ChecksumAlgorithm.SHA1) shouldNot contain key dest
+
+    deposit.bag
+      .addPayloadFile(newFile)(_ / "abc.txt")
+      .flatMap(_.addPayloadManifestAlgorithm(ChecksumAlgorithm.MD5)) shouldBe a[Success[_]]
+
+    // without saving, the new file should be added to the bag...
+    dest.toJava should exist
+    // ... and all object structures should be updated accordingly...
+    deposit.bag.payloadManifestAlgorithms should contain only(ChecksumAlgorithm.SHA1, ChecksumAlgorithm.MD5)
+    deposit.bag.payloadManifests(ChecksumAlgorithm.SHA1) should contain key dest
+    deposit.bag.payloadManifests(ChecksumAlgorithm.MD5) should contain key dest
+    // ... however, they are not yet persisted to file
+    (deposit.bag.baseDir / "manifest-sha1.txt").contentAsString should (
+      not include deposit.bag.baseDir.relativize(dest).toString and
+        not include sha1Checksum)
+    (deposit.bag.baseDir / "manifest-md5.txt").toJava shouldNot exist
+
+    deposit.save() shouldBe a[Success[_]]
+
+    (deposit.bag.baseDir / "manifest-sha1.txt").contentAsString should (
+      include(deposit.bag.baseDir.relativize(dest).toString) and
+        include(sha1Checksum))
+    (deposit.bag.baseDir / "manifest-md5.txt").toJava should exist
+  }
+
+  it should "write changes made to the DepositProperties to the deposit on file system" in {
+    val stateLabel = StateLabel.ARCHIVED
+    val stateDescription = "deposit is archived"
+    val doi = "0123456789abcdef"
+
+    simpleDeposit()
+      .withState(stateLabel, stateDescription)
+      .withDoi(doi)
+      .save() shouldBe a[Success[_]]
+
+    val deposit = simpleDeposit()
+
+    deposit.stateLabel shouldBe stateLabel
+    deposit.stateDescription shouldBe stateDescription
+    deposit.doi.value shouldBe doi
+  }
 }
