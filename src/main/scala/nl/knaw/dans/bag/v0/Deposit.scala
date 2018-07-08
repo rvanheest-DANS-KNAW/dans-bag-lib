@@ -9,7 +9,7 @@ case class Deposit(baseDir: File, bag: Bag, properties: DepositProperties) {
 
   def write(): Try[Unit] = {
     for {
-//      _ <- bag
+      _ <- bag.save()
       _ <- properties.write(baseDir / depositPropertiesName)
     } yield ()
   }
