@@ -1,0 +1,21 @@
+- Deposit
+  * Bag
+  * deposit.properties
+- Bag
+  - path
+  + read bag
+  * bagit version
+  * bag spec version
+  * file encoding
+  * bag-info.txt
+  * manifest-<alg>.txt
+  * tagmanifest-<alg>.txt
+  * Metadata
+  * Data
+- Metadata
+  * Dataset
+  * Files
+- Dataset
+  * <all fields in object>
+- Files
+  * <all fields in object>
