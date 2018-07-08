@@ -6,7 +6,7 @@ import java.util.UUID
 import better.files.File
 import nl.knaw.dans.bag.{ FileSystemSupport, TestSupportFixture }
 import org.joda.time.format.ISODateTimeFormat
-import org.joda.time.{ DateTime, DateTimeZone }
+import org.joda.time.{ DateTime, DateTimeUtils, DateTimeZone }
 
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success, Try }
@@ -16,9 +16,22 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
   private val minimalDepositPropertiesDir: File = testDir / "minimal-deposit-properties"
   private val simpleDepositDir: File = testDir / "simple-deposit"
 
+  private val fixedDateTimeNow: DateTime = new DateTime(2017, 7, 30, 0, 0)
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
 
+    copyBags()
+    fixDateTimeNow()
+  }
+
+  override protected def afterEach(): Unit = {
+    unfixDateTimeNow()
+
+    super.afterEach()
+  }
+
+  private def copyBags(): Unit = {
     val bags = "/test-deposits/simple-deposit" -> simpleDepositDir ::
       "/test-deposits/minimal-deposit-properties" -> minimalDepositPropertiesDir ::
       Nil
@@ -27,16 +40,60 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
       File(getClass.getResource(src)).copyTo(target)
   }
 
+  private def fixDateTimeNow(): Unit = {
+    DateTimeUtils.setCurrentMillisFixed(fixedDateTimeNow.getMillis)
+  }
+
+  private def unfixDateTimeNow(): Unit = {
+    DateTimeUtils.setCurrentMillisOffset(0L)
+  }
+
   private implicit def removeTry[T](t: Try[T]): T = t match {
     case Success(x) => x
     case Failure(e) => throw e
   }
 
-  def minimalDepositProperties: DepositProperties = DepositProperties.fromFile(minimalDepositPropertiesDir / "deposit.properties")
+  def minimalDepositProperties: DepositProperties = DepositProperties.read(minimalDepositPropertiesDir / "deposit.properties")
 
-  def simpleDepositProperties: DepositProperties = DepositProperties.fromFile(simpleDepositDir / "deposit.properties")
+  def simpleDepositProperties: DepositProperties = DepositProperties.read(simpleDepositDir / "deposit.properties")
 
-  "fromFile" should "read the properties from a deposit.properties with all properties in use" in {
+  "empty" should "create a deposit.properties object containing only the minimal required properties" in {
+    val state = State(StateLabel.DRAFT, "this deposit is still in draft")
+    val depositor = Depositor("myuser")
+    val bagId = UUID.fromString("1c2f78a1-26b8-4a40-a873-1073b9f3a56a")
+    val bagStore = new BagStore(bagId, archived = false)
+    val props = DepositProperties.empty(state, depositor, bagStore)
+
+    props.creation.timestamp.toString(ISODateTimeFormat.dateTime()) shouldBe fixedDateTimeNow.toString(ISODateTimeFormat.dateTime())
+
+    props.state.label shouldBe state.label
+    props.state.description shouldBe state.description
+
+    props.depositor.userId shouldBe depositor.userId
+
+    props.bagStore.bagId shouldBe bagId
+    props.bagStore.isArchived shouldBe false
+
+    props.identifier.doi shouldBe empty
+
+    props.curation.dataManager.email shouldBe empty
+    props.curation.dataManager.userId shouldBe empty
+    props.curation.isNewVersion shouldBe empty
+    props.curation.required shouldBe empty
+    props.curation.performed shouldBe empty
+
+    props.springfield.collection shouldBe empty
+    props.springfield.domain shouldBe empty
+    props.springfield.user shouldBe empty
+    props.springfield.playMode shouldBe empty
+
+    props.staged.state shouldBe empty
+
+    // unset fixed DateTime.now
+    DateTimeUtils.setCurrentMillisOffset(0L)
+  }
+
+  "read" should "read the properties from a deposit.properties with all properties in use" in {
     val props = simpleDepositProperties
     props.creation.timestamp.toString(ISODateTimeFormat.dateTime()) shouldBe new DateTime(2018, 5, 25, 20, 8, 56, 210, DateTimeZone.forOffsetHoursMinutes(2, 0)).toString(ISODateTimeFormat.dateTime())
 
@@ -94,7 +151,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
 
   it should "fail if the file does not exist" in {
     val file = simpleDepositDir / "non-existing-deposit.properties"
-    inside(DepositProperties.fromFile(file)) {
+    inside(DepositProperties.read(file)) {
       case Failure(e: NoSuchFileException) =>
         e should have message s"$file does not exist or isn't a file"
     }
@@ -102,7 +159,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
 
   it should "fail if the given better.files.File is not a regular file" in {
     val file = simpleDepositDir
-    inside(DepositProperties.fromFile(file)) {
+    inside(DepositProperties.read(file)) {
       case Failure(e: NoSuchFileException) =>
         e should have message s"$file does not exist or isn't a file"
     }
@@ -134,7 +191,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
     newProps.write(file)
     file.toJava should exist
 
-    val newProps2: DepositProperties = DepositProperties.fromFile(file)
+    val newProps2: DepositProperties = DepositProperties.read(file)
     newProps2 shouldBe newProps
 
     val file2 = simpleDepositDir / "deposit3.properties"

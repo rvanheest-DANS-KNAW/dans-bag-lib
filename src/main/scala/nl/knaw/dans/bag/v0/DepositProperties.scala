@@ -78,19 +78,27 @@ object DepositProperties {
   private val stagedState           = "staged.state"
   // @formatter:on
 
-  def fromFile(propertiesFile: File): Try[DepositProperties] = {
+  def empty(state: State, depositor: Depositor, bagStore: BagStore): DepositProperties = {
+    DepositProperties(
+      state = state,
+      depositor = depositor,
+      bagStore = bagStore
+    )
+  }
+
+  def read(propertiesFile: File): Try[DepositProperties] = {
     if (propertiesFile.exists && propertiesFile.isRegularFile)
       Try {
         new PropertiesConfiguration {
           setDelimiterParsingDisabled(true)
           load(propertiesFile.toJava)
         }
-      }.flatMap(read)
+      }.flatMap(load)
     else
       Failure(new NoSuchFileException(s"$propertiesFile does not exist or isn't a file"))
   }
 
-  def read(properties: PropertiesConfiguration): Try[DepositProperties] = Try {
+  def load(properties: PropertiesConfiguration): Try[DepositProperties] = Try {
     DepositProperties(
       creation = new Creation(
         timestamp = properties.getString(creationTimestamp)
@@ -162,6 +170,10 @@ case class Identifier(doi: Option[String] = None)
 
 case class BagStore(bagId: UUID,
                     private val archived: Option[Boolean] = None) {
+  def this(bagId: UUID, archived: Boolean) = {
+    this(bagId, Option(archived))
+  }
+
   def this(bagId: String, archived: String) = {
     this(UUID.fromString(bagId), Option(archived).map(BooleanUtils.toBoolean))
   }

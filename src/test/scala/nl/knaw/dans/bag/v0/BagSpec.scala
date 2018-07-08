@@ -49,7 +49,7 @@ class BagSpec extends TestSupportFixture
     case Failure(e) => throw e
   }
 
-  def fetchBag(): Bag = Bag.read(fetchBagDir).recover { case e => throw e }
+  def fetchBag(): Bag = Bag.read(fetchBagDir)
 
   def multipleKeysBag(): Bag = Bag.read(multipleKeysBagDir)
 
