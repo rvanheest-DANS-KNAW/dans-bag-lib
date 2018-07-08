@@ -1,17 +1,9 @@
 package nl.knaw.dans.bag.v0
 
 import better.files.File
-import nl.knaw.dans.bag.{ FileSystemSupport, TestSupportFixture }
+import nl.knaw.dans.bag.{ FileSystemSupport, TestBags, TestSupportFixture }
 
-class BagUseCases extends TestSupportFixture with FileSystemSupport {
-
-  private val simpleBagDir: File = testDir / "simple-bag"
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-
-    File(getClass.getResource("/test-bags/simple-bag")).copyTo(simpleBagDir)
-  }
+class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBags {
 
   "bag" should "be able to create an empty bag with default algorithm and no bag-info" in {
     """

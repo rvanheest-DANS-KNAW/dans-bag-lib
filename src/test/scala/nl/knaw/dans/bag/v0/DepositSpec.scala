@@ -2,37 +2,12 @@ package nl.knaw.dans.bag.v0
 
 import java.util.UUID
 
-import better.files.File
-import nl.knaw.dans.bag.{ FileSystemSupport, TestSupportFixture }
+import nl.knaw.dans.bag.{ FileSystemSupport, FixDateTimeNow, TestDeposits, TestSupportFixture }
 import org.joda.time.{ DateTime, DateTimeZone }
 
 import scala.language.implicitConversions
-import scala.util.{ Failure, Success, Try }
 
-class DepositSpec extends TestSupportFixture with FileSystemSupport {
-
-  private val minimalDepositPropertiesDir: File = testDir / "minimal-deposit-properties"
-  private val simpleDepositDir: File = testDir / "simple-deposit"
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-
-    val bags = "/test-deposits/minimal-deposit-properties" -> minimalDepositPropertiesDir ::
-      "/test-deposits/simple-deposit" -> simpleDepositDir ::
-      Nil
-
-    for ((src, target) <- bags)
-      File(getClass.getResource(src)).copyTo(target)
-  }
-
-  private implicit def removeTry(deposit: Try[Deposit]): Deposit = deposit match {
-    case Success(x) => x
-    case Failure(e) => throw e
-  }
-
-  def minimalDepositPropertiesDeposit(): Deposit = Deposit.read(minimalDepositPropertiesDir).recover { case e => throw e }
-
-  def simpleDeposit(): Deposit = Deposit.read(simpleDepositDir)
+class DepositSpec extends TestSupportFixture with FileSystemSupport with TestDeposits with FixDateTimeNow {
 
   "empty" should "create a deposit directory with a bag directory named after the bagId" in pending
 

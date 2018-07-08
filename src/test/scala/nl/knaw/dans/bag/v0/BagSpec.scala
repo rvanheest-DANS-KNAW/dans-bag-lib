@@ -21,41 +21,11 @@ import scala.util.{ Failure, Success, Try }
 
 class BagSpec extends TestSupportFixture
   with FileSystemSupport
+  with TestBags
   with BagMatchers
   with Lipsum
   with FetchFileMetadata
   with CanConnect {
-
-  private val fetchBagDir: File = testDir / "bag-with-fetch"
-  private val multipleKeysBagDir: File = testDir / "multiple-keys-in-baginfo"
-  private val multipleManifestsBagDir: File = testDir / "bag-with-multiple-manifests"
-  private val simpleBagDir: File = testDir / "simple-bag"
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-
-    val bags = "/test-bags/simple-bag" -> simpleBagDir ::
-      "/test-bags/multiple-keys-in-baginfo" -> multipleKeysBagDir ::
-      "/test-bags/bag-with-multiple-manifests" -> multipleManifestsBagDir ::
-      "/test-bags/bag-with-fetch" -> fetchBagDir ::
-      Nil
-
-    for ((src, target) <- bags)
-      File(getClass.getResource(src)).copyTo(target)
-  }
-
-  private implicit def removeTry(bag: Try[Bag]): Bag = bag match {
-    case Success(x) => x
-    case Failure(e) => throw e
-  }
-
-  def fetchBag(): Bag = Bag.read(fetchBagDir)
-
-  def multipleKeysBag(): Bag = Bag.read(multipleKeysBagDir)
-
-  def multipleManifestsBag(): Bag = Bag.read(multipleManifestsBagDir)
-
-  def simpleBag(): Bag = Bag.read(simpleBagDir)
 
   "create empty" should "create a bag on the file system with an empty data directory" in {
     val baseDir = testDir / "emptyTestBag"
@@ -2117,8 +2087,8 @@ class BagSpec extends TestSupportFixture
 
     // changes + save
     bag.addFetchFile(lipsum1URL, 12L, _ / "some-file1.txt")
-      .addFetchFile(lipsum2URL, 13L, _ / "some-file2.txt")
-      .save() shouldBe a[Success[_]]
+      .flatMap(_.addFetchFile(lipsum2URL, 13L, _ / "some-file2.txt"))
+      .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
     bag.fetchFiles should contain only(
@@ -2285,10 +2255,10 @@ class BagSpec extends TestSupportFixture
 
     // changes + save
     bag.removeFetchByURL(existingFetchItem1.url)
-      .removeFetchByURL(existingFetchItem2.url)
-      .removeFetchByURL(existingFetchItem3.url)
-      .removeFetchByURL(existingFetchItem4.url)
-      .save() shouldBe a[Success[_]]
+      .flatMap(_.removeFetchByURL(existingFetchItem2.url))
+      .flatMap(_.removeFetchByURL(existingFetchItem3.url))
+      .flatMap(_.removeFetchByURL(existingFetchItem4.url))
+      .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
     bag.fetchFiles shouldBe empty

@@ -3,42 +3,14 @@ package nl.knaw.dans.bag.v0
 import java.nio.file.NoSuchFileException
 import java.util.UUID
 
-import better.files.File
-import nl.knaw.dans.bag.{ FileSystemSupport, FixDateTimeNow, TestSupportFixture }
+import nl.knaw.dans.bag.{ FileSystemSupport, FixDateTimeNow, TestDeposits, TestSupportFixture }
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{ DateTime, DateTimeUtils, DateTimeZone }
 
 import scala.language.implicitConversions
-import scala.util.{ Failure, Success, Try }
+import scala.util.Failure
 
-class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport with FixDateTimeNow {
-
-  private val minimalDepositPropertiesDir: File = testDir / "minimal-deposit-properties"
-  private val simpleDepositDir: File = testDir / "simple-deposit"
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-
-    copyBags()
-  }
-
-  private def copyBags(): Unit = {
-    val bags = "/test-deposits/simple-deposit" -> simpleDepositDir ::
-      "/test-deposits/minimal-deposit-properties" -> minimalDepositPropertiesDir ::
-      Nil
-
-    for ((src, target) <- bags)
-      File(getClass.getResource(src)).copyTo(target)
-  }
-
-  private implicit def removeTry[T](t: Try[T]): T = t match {
-    case Success(x) => x
-    case Failure(e) => throw e
-  }
-
-  def minimalDepositProperties: DepositProperties = DepositProperties.read(minimalDepositPropertiesDir / "deposit.properties")
-
-  def simpleDepositProperties: DepositProperties = DepositProperties.read(simpleDepositDir / "deposit.properties")
+class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport with TestDeposits with FixDateTimeNow {
 
   "empty" should "create a deposit.properties object containing only the minimal required properties" in {
     val state = State(StateLabel.DRAFT, "this deposit is still in draft")
