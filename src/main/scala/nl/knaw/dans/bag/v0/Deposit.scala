@@ -11,7 +11,7 @@ import nl.knaw.dans.bag.v0.StageState.StageState
 import nl.knaw.dans.bag.v0.StateLabel.StateLabel
 import org.joda.time.DateTime
 
-import scala.language.postfixOps
+import scala.language.{ implicitConversions, postfixOps }
 import scala.util.{ Failure, Success, Try }
 
 class Deposit private(val baseDir: File,

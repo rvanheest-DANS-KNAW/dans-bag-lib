@@ -2075,6 +2075,8 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "create a fetch.txt file when fetch files were introduced to the bag for the first time" in {
+    assumeCanConnect(lipsum1URL, lipsum2URL)
+
     val bag = multipleManifestsBag()
 
     val fetchTxt = bag / "fetch.txt"
@@ -2111,6 +2113,8 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "save fetch.txt when there were already fetch files in the bag" ignore { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/117
+    assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
+
     val bag = fetchBag()
 
     val fetchTxt = bag / "fetch.txt"
@@ -2166,6 +2170,8 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "list the added fetch files in the payload manifests" in {
+    assumeCanConnect(lipsum5URL)
+
     val bag = multipleManifestsBag()
 
     val newFetchItem = FetchItem(lipsum5URL, 12L, bag.data / "some-file.txt")
@@ -2198,6 +2204,8 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "list fetch.txt in all tagmanifests" in {
+    assumeCanConnect(lipsum5URL)
+
     val bag = multipleManifestsBag()
 
     val newFetchItem = FetchItem(lipsum5URL, 12L, bag.data / "some-file.txt")
