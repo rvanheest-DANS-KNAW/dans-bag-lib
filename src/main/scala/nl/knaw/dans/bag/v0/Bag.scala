@@ -24,7 +24,7 @@ import scala.util.{ Failure, Success, Try }
 
 class Bag private(private[v0] val locBag: LocBag) {
 
-  override def equals(obj: scala.Any): Boolean = locBag.equals(obj)
+  override def equals(obj: Any): Boolean = locBag.equals(obj)
 
   override def hashCode(): Int = locBag.hashCode()
 

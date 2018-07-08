@@ -169,7 +169,7 @@ case class Depositor(userId: String)
 case class Identifier(doi: Option[String] = None)
 
 case class BagStore(bagId: UUID,
-                    private val archived: Option[Boolean] = None) {
+                    archived: Option[Boolean] = None) {
   def this(bagId: UUID, archived: Boolean) = {
     this(bagId, Option(archived))
   }
