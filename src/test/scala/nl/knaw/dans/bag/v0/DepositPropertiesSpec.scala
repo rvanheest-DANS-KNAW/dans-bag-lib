@@ -177,7 +177,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
     newProps.bagStore.isArchived shouldBe false
   }
 
-  "write" should "save a changed DepositProperties to a file" in {
+  "save" should "write a changed DepositProperties to file" in {
     val props = simpleDepositProperties
 
     val newProps = props.copy(
@@ -188,7 +188,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
     val file = simpleDepositDir / "deposit2.properties"
     file.toJava shouldNot exist
 
-    newProps.write(file)
+    newProps.save(file)
     file.toJava should exist
 
     val newProps2: DepositProperties = DepositProperties.read(file)
@@ -197,7 +197,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
     val file2 = simpleDepositDir / "deposit3.properties"
     file2.toJava shouldNot exist
 
-    newProps2.write(file2)
+    newProps2.save(file2)
     file2.toJava should exist
 
     file.contentAsString shouldBe file2.contentAsString

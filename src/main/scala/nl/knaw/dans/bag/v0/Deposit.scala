@@ -320,7 +320,7 @@ class Deposit private(val baseDir: File, bag: Bag, properties: DepositProperties
   def write(): Try[Unit] = {
     for {
       _ <- bag.save()
-      _ <- properties.write(baseDir / depositPropertiesName)
+      _ <- properties.save(baseDir / depositPropertiesName)
     } yield ()
   }
 

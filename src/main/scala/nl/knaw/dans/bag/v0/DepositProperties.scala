@@ -24,7 +24,7 @@ case class DepositProperties(creation: Creation = Creation(),
                              springfield: Springfield = Springfield(),
                              staged: Staged = Staged()) {
 
-  def write(file: File): Try[Unit] = Try {
+  def save(file: File): Try[Unit] = Try {
     new PropertiesConfiguration {
       setDelimiterParsingDisabled(true)
 
