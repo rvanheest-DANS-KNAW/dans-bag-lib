@@ -4,31 +4,22 @@ import java.nio.file.NoSuchFileException
 import java.util.UUID
 
 import better.files.File
-import nl.knaw.dans.bag.{ FileSystemSupport, TestSupportFixture }
+import nl.knaw.dans.bag.{ FileSystemSupport, FixDateTimeNow, TestSupportFixture }
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{ DateTime, DateTimeUtils, DateTimeZone }
 
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success, Try }
 
-class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
+class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport with FixDateTimeNow {
 
   private val minimalDepositPropertiesDir: File = testDir / "minimal-deposit-properties"
   private val simpleDepositDir: File = testDir / "simple-deposit"
-
-  private val fixedDateTimeNow: DateTime = new DateTime(2017, 7, 30, 0, 0)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
 
     copyBags()
-    fixDateTimeNow()
-  }
-
-  override protected def afterEach(): Unit = {
-    unfixDateTimeNow()
-
-    super.afterEach()
   }
 
   private def copyBags(): Unit = {
@@ -38,14 +29,6 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport {
 
     for ((src, target) <- bags)
       File(getClass.getResource(src)).copyTo(target)
-  }
-
-  private def fixDateTimeNow(): Unit = {
-    DateTimeUtils.setCurrentMillisFixed(fixedDateTimeNow.getMillis)
-  }
-
-  private def unfixDateTimeNow(): Unit = {
-    DateTimeUtils.setCurrentMillisOffset(0L)
   }
 
   private implicit def removeTry[T](t: Try[T]): T = t match {
