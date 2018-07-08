@@ -49,7 +49,7 @@ case class DepositProperties(creation: Creation = Creation(),
       springfield.domain.foreach(setProperty(springfieldDomain, _))
       springfield.user.foreach(setProperty(springfieldUser, _))
       springfield.collection.foreach(setProperty(springfieldCollection, _))
-      springfield.playMode.foreach(playMode => setProperty(sprinfieldPlaymode, playMode.toString))
+      springfield.playMode.foreach(setProperty(sprinfieldPlaymode, _))
 
       staged.state.foreach(state => setProperty(stagedState, state.toString))
     }.save(file.toJava)
