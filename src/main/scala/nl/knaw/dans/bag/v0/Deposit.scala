@@ -32,7 +32,7 @@ class Deposit private(val baseDir: File,
     s"Deposit(baseDir = $baseDir, bag = $bag, properties = $properties)"
   }
 
-  def creation: DateTime = properties.creation.timestamp
+  def creationTimestamp: DateTime = properties.creation.timestamp
 
   def withCreation(timestamp: DateTime): Deposit = {
     val newProperties = properties.copy(creation = Creation(timestamp))
