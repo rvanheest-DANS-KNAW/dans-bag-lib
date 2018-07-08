@@ -16,7 +16,7 @@
 
     <inceptionYear>2018</inceptionYear>
     <name>DANS Bag Library</name>
-    <description>Library for reading and writing DANS bags</description>
+    <description>Library for creating, reading and mutating DANS bags</description>
 
     <scm>
         <developerConnection>scm:git:https://github.com/DANS-KNAW/${project.artifactId}</developerConnection>
