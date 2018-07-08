@@ -1,0 +1,4 @@
+https://raw.githubusercontent.com/rvanheest-DANS-KNAW/dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/lipsum1.txt  12  data/sub/u
+https://raw.githubusercontent.com/rvanheest-DANS-KNAW/dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/lipsum2.txt  12  data/sub/v
+https://raw.githubusercontent.com/rvanheest-DANS-KNAW/dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/lipsum3.txt  12  data/y-old
+https://raw.githubusercontent.com/rvanheest-DANS-KNAW/dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/lipsum4.txt  12  data/x
