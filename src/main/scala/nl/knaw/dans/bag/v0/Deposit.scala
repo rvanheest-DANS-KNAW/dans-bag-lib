@@ -1,6 +1,6 @@
 package nl.knaw.dans.bag.v0
 
-import java.nio.file.FileAlreadyExistsException
+import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException }
 import java.util.{ Objects, UUID }
 
 import better.files.File
@@ -11,6 +11,7 @@ import nl.knaw.dans.bag.v0.StageState.StageState
 import nl.knaw.dans.bag.v0.StateLabel.StateLabel
 import org.joda.time.DateTime
 
+import scala.language.postfixOps
 import scala.util.{ Failure, Success, Try }
 
 class Deposit private(val baseDir: File,
@@ -347,7 +348,7 @@ object Deposit {
       for {
         bag <- Bag.empty(baseDir / bagStore.bagId.toString, algorithms, bagInfo)
         properties = DepositProperties.empty(state, depositor, bagStore)
-        _ <- properties.save(baseDir / depositPropertiesName)
+        _ <- properties.save(depositProperties(baseDir))
       } yield new Deposit(baseDir, bag, properties)
   }
 
@@ -357,11 +358,16 @@ object Deposit {
                      state: State,
                      depositor: Depositor,
                      bagStore: BagStore): Try[Deposit] = {
-    for {
-      bag <- Bag.createFromData(payloadDir, algorithms, bagInfo)
-      _ <- moveBag(bag, bagStore.bagId)
-      properties = DepositProperties.empty(state, depositor, bagStore)
-    } yield new Deposit(payloadDir, bag, properties)
+    if (payloadDir.notExists)
+      Failure(new NoSuchFileException(payloadDir.toString))
+    else {
+      for {
+        bagDir <- moveBag(payloadDir, bagStore.bagId)
+        bag <- Bag.createFromData(bagDir, algorithms, bagInfo)
+        properties = DepositProperties.empty(state, depositor, bagStore)
+        _ <- properties.save(depositProperties(payloadDir))
+      } yield new Deposit(payloadDir, bag, properties)
+    }
   }
 
   def read(baseDir: File): Try[Deposit] = {
@@ -374,14 +380,17 @@ object Deposit {
 
   implicit def depositAsFile(deposit: Deposit): File = deposit.baseDir
 
-  private def moveBag(bag: Bag, bagId: UUID): Try[Unit] = Try {
-    val depositDir = bag.baseDir.parent
-    val newBagDir = depositDir / bagId.toString createDirectory()
+  private def moveBag(payloadDir: File, bagId: UUID): Try[File] = Try {
+    val bagDir = payloadDir / bagId.toString createDirectory()
+    for (payloadFile <- payloadDir.list
+         if payloadFile != bagDir)
+      payloadFile.moveTo(bagDir / payloadDir.relativize(payloadFile).toString)
 
-    bag.baseDir.moveTo(newBagDir)
+    bagDir
   }
 
   private def findBagDir(baseDir: File): Try[File] = {
+    // due to backwards compatibility, we cannot implement this using the bagId from deposit.properties
     baseDir.list.filter(_.isDirectory).toList match {
       case dir :: Nil => Success(dir)
       case Nil => Failure(new IllegalArgumentException(s"$baseDir is not a deposit: it contains no directories"))

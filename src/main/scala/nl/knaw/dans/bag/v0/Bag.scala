@@ -888,7 +888,7 @@ object Bag {
   def createFromData(payloadDir: File,
                      algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
                      bagInfo: Map[String, Seq[String]] = Map.empty): Try[Bag] = {
-    if (!payloadDir.exists)
+    if (payloadDir.notExists)
       Failure(new NoSuchFileException(payloadDir.toString))
     else
       bagInPlace(payloadDir, algorithms, bagInfo)
