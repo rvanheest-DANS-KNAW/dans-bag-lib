@@ -1,5 +1,6 @@
 package nl.knaw.dans.bag.v0
 
+import java.nio.file.FileAlreadyExistsException
 import java.util.{ Objects, UUID }
 
 import better.files.File
@@ -340,10 +341,14 @@ object Deposit {
             state: State,
             depositor: Depositor,
             bagStore: BagStore): Try[Deposit] = {
-    for {
-      bag <- Bag.empty(baseDir / bagStore.bagId.toString, algorithms, bagInfo)
-      properties = DepositProperties.empty(state, depositor, bagStore)
-    } yield new Deposit(baseDir, bag, properties)
+    if (baseDir.exists)
+      Failure(new FileAlreadyExistsException(baseDir.toString))
+    else
+      for {
+        bag <- Bag.empty(baseDir / bagStore.bagId.toString, algorithms, bagInfo)
+        properties = DepositProperties.empty(state, depositor, bagStore)
+        _ <- properties.save(baseDir / depositPropertiesName)
+      } yield new Deposit(baseDir, bag, properties)
   }
 
   def createFromData(payloadDir: File,

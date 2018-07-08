@@ -1,12 +1,17 @@
 package nl.knaw.dans.bag.v0
 
-import java.util.UUID
+import java.nio.file.FileAlreadyExistsException
+import java.text.SimpleDateFormat
+import java.util.{ Date, UUID }
 
 import nl.knaw.dans.bag._
+import org.apache.commons.configuration.PropertiesConfiguration
+import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{ DateTime, DateTimeZone }
 
-import scala.language.implicitConversions
-import scala.util.Success
+import scala.language.{ implicitConversions, postfixOps }
+import scala.util.{ Failure, Success }
+import scala.collection.JavaConverters._
 
 class DepositSpec extends TestSupportFixture
   with FileSystemSupport
@@ -14,15 +19,149 @@ class DepositSpec extends TestSupportFixture
   with FixDateTimeNow
   with Lipsum {
 
-  "empty" should "create a deposit directory with a bag directory named after the bagId" in pending
+  "empty" should "create a deposit directory with a bag directory named after the bagId" in {
+    val baseDir = testDir / "emptyTestDeposit"
+    val algorithms = Set(ChecksumAlgorithm.SHA512)
+    val bagInfo = Map("Is-Version-Of" -> Seq(UUID.randomUUID().toString))
+    val state = State(StateLabel.DRAFT, "deposit under construction")
+    val depositor = Depositor("ikke")
+    val bagId = UUID.randomUUID()
+    val bagStore = BagStore(bagId)
 
-  it should "create a deposit directory with a bag directory in it, equivalent to calling Bag.empty" in pending
+    val bagDir = baseDir / bagId.toString
 
-  it should "create a deposit directory with a deposit.properties file in it" in pending
+    baseDir.toJava shouldNot exist
+    bagDir.toJava shouldNot exist
 
-  it should "create a deposit directory with a deposit.properties file in it, containing the given, basic properties" in pending
+    inside(Deposit.empty(baseDir, algorithms, bagInfo, state, depositor, bagStore)) {
+      case Success(deposit) =>
+        baseDir.toJava should exist
+        bagDir.toJava should exist
+        deposit.bag.baseDir shouldBe bagDir
+    }
+  }
 
-  it should "return a Deposit object with the base directory, Bag object and DepositProperties object in it" in pending
+  it should "create a deposit directory with a bag directory in it, equivalent to calling Bag.empty" in {
+    val baseDir = testDir / "emptyTestDeposit"
+    val algorithms = Set(ChecksumAlgorithm.SHA512)
+    val bagInfo = Map("Is-Version-Of" -> Seq(UUID.randomUUID().toString))
+    val state = State(StateLabel.DRAFT, "deposit under construction")
+    val depositor = Depositor("ikke")
+    val bagId = UUID.randomUUID()
+    val bagStore = BagStore(bagId)
+
+    inside(Deposit.empty(baseDir, algorithms, bagInfo, state, depositor, bagStore)) {
+      case Success(deposit) =>
+        deposit.bag.baseDir.listRecursively.toList should contain only(
+          deposit.bag.baseDir / "data",
+          deposit.bag.baseDir / "bagit.txt",
+          deposit.bag.baseDir / "bag-info.txt",
+          deposit.bag.baseDir / "manifest-sha512.txt",
+          deposit.bag.baseDir / "tagmanifest-sha512.txt",
+        )
+    }
+  }
+
+  it should "create a deposit directory with a deposit.properties file in it" in {
+    val baseDir = testDir / "emptyTestDeposit"
+    val algorithms = Set(ChecksumAlgorithm.SHA512)
+    val bagInfo = Map("Is-Version-Of" -> Seq(UUID.randomUUID().toString))
+    val state = State(StateLabel.DRAFT, "deposit under construction")
+    val depositor = Depositor("ikke")
+    val bagId = UUID.randomUUID()
+    val bagStore = BagStore(bagId)
+
+    inside(Deposit.empty(baseDir, algorithms, bagInfo, state, depositor, bagStore)) {
+      case Success(deposit) =>
+        (deposit.baseDir / "deposit.properties").toJava should exist
+    }
+  }
+
+  it should "create a deposit directory with a deposit.properties file in it, containing the given, basic properties" in {
+    val baseDir = testDir / "emptyTestDeposit"
+    val algorithms = Set(ChecksumAlgorithm.SHA512)
+    val bagInfo = Map("Is-Version-Of" -> Seq(UUID.randomUUID().toString))
+    val state = State(StateLabel.DRAFT, "deposit under construction")
+    val depositor = Depositor("ikke")
+    val bagId = UUID.randomUUID()
+    val bagStore = BagStore(bagId)
+
+    inside(Deposit.empty(baseDir, algorithms, bagInfo, state, depositor, bagStore)) {
+      case Success(deposit) =>
+        val props = new PropertiesConfiguration(deposit.baseDir / "deposit.properties" toJava)
+        props.getKeys.asScala.toList should contain only(
+          DepositProperties.creationTimestamp,
+          DepositProperties.stateLabel,
+          DepositProperties.stateDescription,
+          DepositProperties.bagStoreBagId,
+          DepositProperties.depositorUserId,
+        )
+
+        props.getString(DepositProperties.creationTimestamp) shouldBe fixedDateTimeNow.toString(ISODateTimeFormat.dateTime())
+        props.getString(DepositProperties.stateLabel) shouldBe state.label.toString
+        props.getString(DepositProperties.stateDescription) shouldBe state.description
+        props.getString(DepositProperties.bagStoreBagId) shouldBe bagId.toString
+        props.getString(DepositProperties.depositorUserId) shouldBe depositor.userId
+
+    }
+  }
+
+  it should "return a Deposit object with the base directory, Bag object and DepositProperties object in it" in {
+    val baseDir = testDir / "emptyTestDeposit"
+    val algorithms = Set(ChecksumAlgorithm.SHA512)
+    val baseId = UUID.randomUUID()
+    val bagInfo = Map("Is-Version-Of" -> Seq(baseId.toString))
+    val state = State(StateLabel.DRAFT, "deposit under construction")
+    val depositor = Depositor("ikke")
+    val bagId = UUID.randomUUID()
+    val bagStore = BagStore(bagId)
+
+    inside(Deposit.empty(baseDir, algorithms, bagInfo, state, depositor, bagStore)) {
+      case Success(deposit) =>
+        deposit.creationTimestamp shouldBe fixedDateTimeNow
+        deposit.stateLabel shouldBe state.label
+        deposit.stateDescription shouldBe state.description
+        deposit.bagId shouldBe bagId
+        deposit.depositor shouldBe depositor.userId
+
+        deposit.bag.bagInfo should contain only (
+          "Payload-Oxum" -> Seq("0.0"),
+          // usually I would use Joda for this, but since this already has a fixed DateTime.now(),
+          // I have to use another way of getting today's date
+          "Bagging-Date" -> Seq(new SimpleDateFormat("yyyy-MM-dd").format(new Date())),
+          "Is-Version-Of" -> Seq(baseId.toString),
+        )
+
+        deposit.bag.payloadManifestAlgorithms should contain only ChecksumAlgorithm.SHA512
+        deposit.bag.payloadManifests(ChecksumAlgorithm.SHA512) shouldBe empty
+
+        deposit.bag.tagManifestAlgorithms should contain only ChecksumAlgorithm.SHA512
+        deposit.bag.tagManifests(ChecksumAlgorithm.SHA512).keySet should contain only (
+          deposit.bag / "bagit.txt",
+          deposit.bag / "bag-info.txt",
+          deposit.bag / "manifest-sha512.txt"
+        )
+    }
+  }
+
+  it should "fail when the baseDir of the deposit already exists" in {
+    val baseDir = testDir / "emptyTestDeposit" createIfNotExists(asDirectory = false, createParents = true)
+    val algorithms = Set(ChecksumAlgorithm.SHA512)
+    val baseId = UUID.randomUUID()
+    val bagInfo = Map("Is-Version-Of" -> Seq(baseId.toString))
+    val state = State(StateLabel.DRAFT, "deposit under construction")
+    val depositor = Depositor("ikke")
+    val bagId = UUID.randomUUID()
+    val bagStore = BagStore(bagId)
+
+    baseDir.toJava should exist
+    baseDir.isRegularFile shouldBe true
+
+    inside(Deposit.empty(baseDir, algorithms, bagInfo, state, depositor, bagStore)) {
+      case Failure(e: FileAlreadyExistsException) =>
+        e should have message baseDir.toString()
+    }
+  }
 
   "createFromData" should "create a deposit directory with a bag directory named after the bagId" in pending
 
