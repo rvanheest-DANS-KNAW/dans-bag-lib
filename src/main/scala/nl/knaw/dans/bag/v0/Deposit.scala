@@ -12,7 +12,9 @@ import org.joda.time.DateTime
 
 import scala.util.{ Failure, Success, Try }
 
-class Deposit private(val baseDir: File, val bag: Bag, properties: DepositProperties) {
+class Deposit private(val baseDir: File,
+                      val bag: Bag,
+                      private val properties: DepositProperties) {
 
   override def equals(obj: Any): Boolean = {
     obj match {
