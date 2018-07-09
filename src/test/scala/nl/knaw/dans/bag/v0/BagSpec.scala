@@ -1880,7 +1880,7 @@ class BagSpec extends TestSupportFixture
     val bag = simpleBag()
 
     bag.toJava should exist
-    //    bag.isChildOf(bag) shouldBe false // TODO why does this actually return true???
+    //    bag.isChildOf(bag) shouldBe false // TODO why does this actually return true??? - https://github.com/pathikrit/better-files/issues/247
 
     inside(bag.removeTagFile(identity)) {
       case Failure(e: IllegalArgumentException) =>

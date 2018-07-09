@@ -83,7 +83,6 @@ class Bag private(private[v0] val locBag: LocBag) {
    * @return this bag, with the new `Charset`
    */
   def withFileEncoding(charset: Charset): Bag = {
-    // TODO do we actually need to change the tag files to have a new/updated encoding?
     locBag.setFileEncoding(charset)
     this
   }
@@ -301,6 +300,14 @@ class Bag private(private[v0] val locBag: LocBag) {
    * In both use cases of this method, the payload manifest will be added to all tag manifests with
    * a temporary value, indicating that the real checksum for the payload manifest will only be
    * recalculated on calling `Bag.save`.
+   * Since fetch files are also listed in all payload manifests, this method will upon encountering
+   * fetch files, download them using the specified URL and calculate their checksums according to
+   * the new/updated algorithm. Afterwards the downloaded files are deleted.
+   *
+   * Due to calculating the checksums for all files, as well as downloading all fetch files, this
+   * method may take some time to complete and return. It is therefore strongly advised to wrap
+   * a call to this method in a `Promise`/`Future`, `Observable` or any other desired data structure
+   * that deals with latency in a proper way.
    *
    * Please note that this new/updated algorithm will only be added to the bag on the file system
    * once `Bag.save` is called.
@@ -309,8 +316,6 @@ class Bag private(private[v0] val locBag: LocBag) {
    * @param updateManifest    indicates whether it should update (`true`) or add (`false`) the algorithm
    * @return this bag, with the new algorithm added
    */
-  // TODO add to documentation that checksums for fetch files are calculated as well
-  // this may cause some latency. Wrapping in a Promise/Observable is recommended!
   def addPayloadManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm,
                                   updateManifest: Boolean = false): Try[Bag] = Try {
     addAlgorithm(checksumAlgorithm, updateManifest, includeFetchFiles = true)(
@@ -405,6 +410,9 @@ class Bag private(private[v0] val locBag: LocBag) {
    * this method will return a `scala.util.Failure`. This method also adds the checksum of the new
    * file to all payload manifests.
    *
+   * Please note that fetch files are also considered part of the payload files. Therefore it is not
+   * allowed to add a payload file using this method that is already declared in `fetch.txt`.
+   *
    * Please note that, while the new file is added to the bag immediately, the changes to the
    * payload manifests will only be applied to the bag on the file system once `Bag.save` is called.
    *
@@ -412,7 +420,6 @@ class Bag private(private[v0] val locBag: LocBag) {
    * @param pathInData  the path relative to the `bag/data` directory where the new file is being placed
    * @return this bag, with the added checksums of the new payload file
    */
-  // TODO add to documentation that the pathInData cannot be a file that is already in fetch.txt
   def addPayloadFile(inputStream: InputStream)(pathInData: RelativePath): Try[Bag] = Try {
     val file = pathInData(data)
 
@@ -436,6 +443,9 @@ class Bag private(private[v0] val locBag: LocBag) {
    * the resolved destination is outside of the `bag/data` directory, this method will return a
    * `scala.util.Failure`. This method also adds the checksum of the new file to all payload manifests.
    *
+   * Please note that fetch files are also considered part of the payload files. Therefore it is not
+   * allowed to add a payload file using this method that is already declared in `fetch.txt`.
+   *
    * Please note that, while the new file is added to the bag immediately, the changes to the
    * payload manifests will only be applied to the bag on the file system once `Bag.save` is called.
    *
@@ -443,7 +453,6 @@ class Bag private(private[v0] val locBag: LocBag) {
    * @param pathInData the path relative to the `bag/data` directory where the new file is being placed
    * @return this bag, with the added checksums of the new payload file
    */
-  // TODO add to documentation that the pathInData cannot be a file that is already in fetch.txt
   def addPayloadFile(src: File)(pathInData: RelativePath): Try[Bag] = Try {
     addFile(src, pathInData)(_.addPayloadFile)
 
@@ -897,8 +906,7 @@ object Bag {
   private def bagInPlace(base: File,
                          algorithms: Set[ChecksumAlgorithm],
                          bagInfo: Map[String, Seq[String]]): Try[Bag] = Try {
-    require(algorithms.nonEmpty,
-      "At least one algorithm should be provided")
+    require(algorithms.nonEmpty, "At least one algorithm should be provided")
 
     val algos = algorithms.map(locDeconverter).asJava
     val metadata = new LocMetadata() {
