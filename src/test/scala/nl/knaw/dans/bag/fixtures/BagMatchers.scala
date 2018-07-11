@@ -1,4 +1,4 @@
-package nl.knaw.dans.bag
+package nl.knaw.dans.bag.fixtures
 
 import java.nio.charset.StandardCharsets
 
@@ -6,8 +6,9 @@ import better.files.File
 import gov.loc.repository.bagit.domain.{ FetchItem => LocFetchItem }
 import gov.loc.repository.bagit.hash.StandardBagitAlgorithmNameToSupportedAlgorithmMapping
 import gov.loc.repository.bagit.reader.{ FetchReader, ManifestReader, MetadataReader }
-import nl.knaw.dans.bag.v0.ChecksumAlgorithm._
-import nl.knaw.dans.bag.v0.{ FetchItem, betterFileToPath }
+import nl.knaw.dans.bag.ChecksumAlgorithm._
+import nl.knaw.dans.bag.FetchItem
+import nl.knaw.dans.bag.betterFileToPath
 import org.scalatest.FlatSpecLike
 import org.scalatest.matchers.{ MatchResult, Matcher }
 
@@ -35,7 +36,8 @@ trait BagMatchers {
       )
     }
   }
-  def containInBagInfoOnly(bagInfoHead: BagInfoEntry, bagInfosTail: BagInfoEntry*): ContainInBagInfoOnly = {
+  def containInBagInfoOnly(bagInfoHead: BagInfoEntry,
+                           bagInfosTail: BagInfoEntry*): ContainInBagInfoOnly = {
     new ContainInBagInfoOnly(bagInfoHead :: bagInfosTail.toList)
   }
 
@@ -58,7 +60,8 @@ trait BagMatchers {
     new ContainInFetchOnly(fetchHead :: fetchTail.toList)
   }
 
-  class ContainInManifestFileOnly(name: String, algorithm: ChecksumAlgorithm, files: Seq[File]) extends Matcher[File] {
+  class ContainInManifestFileOnly(name: String, algorithm: ChecksumAlgorithm,
+                                  files: Seq[File]) extends Matcher[File] {
     override def apply(baseDir: File): MatchResult = {
       val manifestFilename = s"$name-${ algorithm.getBagitName }.txt"
       val manifestFile = baseDir / manifestFilename
@@ -83,7 +86,8 @@ trait BagMatchers {
     new ContainInManifestFileOnly("tagmanifest", algorithm, files)
   }
 
-  class ContainInManifestOnly(algorithm: ChecksumAlgorithm, files: Seq[File]) extends Matcher[Map[ChecksumAlgorithm, Map[File, String]]] {
+  class ContainInManifestOnly(algorithm: ChecksumAlgorithm,
+                              files: Seq[File]) extends Matcher[Map[ChecksumAlgorithm, Map[File, String]]] {
     def apply(manifests: Map[ChecksumAlgorithm, Map[File, String]]): MatchResult = {
       val manifest = manifests(algorithm)
 

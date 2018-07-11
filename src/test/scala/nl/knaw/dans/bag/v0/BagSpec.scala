@@ -10,8 +10,10 @@ import better.files.File
 import gov.loc.repository.bagit.conformance.{ BagLinter, BagitWarning }
 import gov.loc.repository.bagit.domain.Version
 import gov.loc.repository.bagit.verify.BagVerifier
+import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
+import nl.knaw.dans.bag.IBag.bagAsFile
 import nl.knaw.dans.bag._
-import nl.knaw.dans.bag.v0.ChecksumAlgorithm.ChecksumAlgorithm
+import nl.knaw.dans.bag.fixtures._
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{ DateTime, DateTimeZone }
 
@@ -335,7 +337,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "read bag" should "load a bag located in the given directory into the object structure for a Bag" in {
-    Bag.read(simpleBagDir) should matchPattern { case Success(_: Bag) => }
+    Bag.read(simpleBagDirV0) should matchPattern { case Success(_: Bag) => }
   }
 
   it should "fail when the directory does not exist" in {
@@ -352,11 +354,11 @@ class BagSpec extends TestSupportFixture
   }
 
   "baseDir" should "return the root directory of the bag" in {
-    simpleBag().baseDir shouldBe simpleBagDir
+    simpleBagV0().baseDir shouldBe simpleBagDirV0
   }
 
   "data" should "point to the root of the bag/data directory" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     bag.data.toJava shouldBe (bag.baseDir / "data" toJava)
     bag.data.listRecursively.toList should contain only(
       bag.data / "x",
@@ -370,27 +372,27 @@ class BagSpec extends TestSupportFixture
   }
 
   "bagitVersion" should "read the version from bagit.txt" in {
-    simpleBag().bagitVersion shouldBe new Version(0, 97)
+    simpleBagV0().bagitVersion shouldBe new Version(0, 97)
   }
 
   "withBagitVersion" should "change the version in the bag" in {
-    simpleBag()
-      .withBagitVersion(Versions.Version_1_0)
+    simpleBagV0()
+      .withBagitVersion(SupportedVersions.Version_1_0)
       .bagitVersion shouldBe new Version(1, 0)
   }
 
   "fileEncoding" should "read the file encoding from bagit.txt" in {
-    simpleBag().fileEncoding shouldBe StandardCharsets.UTF_8
+    simpleBagV0().fileEncoding shouldBe StandardCharsets.UTF_8
   }
 
   "withFileEncoding" should "change the file encoding in the bag" in {
-    simpleBag()
+    simpleBagV0()
       .withFileEncoding(StandardCharsets.UTF_16LE)
       .fileEncoding shouldBe StandardCharsets.UTF_16LE
   }
 
   "bagInfo" should "read the data from bag-info.txt" in {
-    simpleBag().bagInfo should contain only(
+    simpleBagV0().bagInfo should contain only(
       "Payload-Oxum" -> List("72.6"),
       "Bagging-Date" -> List("2016-06-07"),
       "Bag-Size" -> List("0.6 KB"),
@@ -399,11 +401,11 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "group equivalent keys from bag-info.txt" in {
-    multipleKeysBag().bagInfo should contain("Bagging-Date" -> List("2016-06-07", "2016-06-08"))
+    multipleKeysBagV0().bagInfo should contain("Bagging-Date" -> List("2016-06-07", "2016-06-08"))
   }
 
   "addBagInfo" should "add a new key-value pair to the bag-info" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val key = "My-Test-Value"
     val value = "hello world"
 
@@ -413,7 +415,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "add a new value to an already existing key" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val key = "Bagging-Date"
     val oldDate = "2016-06-07"
 
@@ -426,7 +428,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "removeBagInfo" should "remove a key-value pair from the bag-info" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val createdKey = "Created"
 
     bag.bagInfo should contain key createdKey
@@ -437,7 +439,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove all values when the key contains multiple values" in {
-    val bag = multipleKeysBag()
+    val bag = multipleKeysBagV0()
     val baggingDateKey = "Bagging-Date"
 
     bag.bagInfo should contain key baggingDateKey
@@ -449,7 +451,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "ignore the removal of a key that is not present in the bagInfo" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val nonExistingKey = "Non-Existing-Key"
 
     bag.bagInfo shouldNot contain key nonExistingKey
@@ -460,7 +462,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "created" should "return the element in bag-info.txt with key 'Created' if present" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val expected = new DateTime(2017, 1, 16, 14, 35, 0, 888, DateTimeZone.forOffsetHoursMinutes(1, 0))
 
     inside(bag.created) {
@@ -470,14 +472,14 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "return None if the key 'Created' is not present" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     bag.locBag.getMetadata.remove(Bag.CREATED_KEY)
 
     bag.created should matchPattern { case Success(None) => }
   }
 
   it should "fail when the key 'Created' contains something that is not a date/time" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     bag.locBag.getMetadata.remove(Bag.CREATED_KEY)
     bag.locBag.getMetadata.add(Bag.CREATED_KEY, "not-a-date")
 
@@ -487,7 +489,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "withCreated" should "set the 'Created' key in the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     bag.locBag.getMetadata.remove(Bag.CREATED_KEY)
 
     val expected = new DateTime(2017, 1, 16, 14, 35, 0, 888, DateTimeZone.forOffsetHoursMinutes(1, 0))
@@ -499,7 +501,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "discard the former 'Created' key, such that there is always at most one value for this key" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     val expected = new DateTime(2017, 1, 16, 14, 35, 0, 888, DateTimeZone.forOffsetHoursMinutes(1, 0))
     val resultBag = bag.withCreated(expected)
@@ -512,7 +514,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "withoutCreated" should "remove the 'Created' key from the bag-info" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     bag.bagInfo should contain key Bag.CREATED_KEY
 
@@ -521,7 +523,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "not fail when the 'Created' key was not present in the bag-info" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     val resultBag = bag.withoutCreated()
     resultBag.bagInfo shouldNot contain key Bag.CREATED_KEY
@@ -531,20 +533,20 @@ class BagSpec extends TestSupportFixture
   }
 
   "isVersionOf" should "return the urn:uuid of the 'Is-Version-Of' key in the bag-info" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val expected = new URI("urn:uuid:00000000-0000-0000-0000-000000000001")
 
     bag.isVersionOf should matchPattern { case Success(Some(`expected`)) => }
   }
 
   it should "return None when no 'Is-Version-Of' key is present in the bag-info" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     bag.isVersionOf should matchPattern { case Success(None) => }
   }
 
   it should "fail when the 'Is-Version-Of' key contains something else than a URI" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     bag.locBag.getMetadata.add(Bag.IS_VERSION_OF_KEY, "not-a-uri")
 
     bag.isVersionOf should matchPattern {
@@ -553,7 +555,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "withIsVersionOf" should "set the 'Is-Version-Of' key in the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     val uuid = UUID.fromString("00000000-0000-0000-0000-000000000002")
     val expected = new URI(s"urn:uuid:$uuid")
@@ -563,7 +565,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "discard the former 'Is-Version-Of' key, such that there is always at most one value for this key" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
 
     val uuid = UUID.fromString("00000000-0000-0000-0000-000000000002")
     val expected = new URI(s"urn:uuid:$uuid")
@@ -575,7 +577,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "withoutIsVersionOf" should "remove the 'Is-Version-Of' key from the bag-info" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
 
     bag.bagInfo should contain key Bag.IS_VERSION_OF_KEY
 
@@ -584,7 +586,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "not fail when the 'Is-Version-Of' key was not present in the bag-info" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
 
     bag.bagInfo should contain key Bag.IS_VERSION_OF_KEY
 
@@ -596,7 +598,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "fetchFiles" should "list all entries in the fetch.txt files" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     bag.fetchFiles should contain only(
       FetchItem(lipsum1URL, 12L, bag.data / "sub" / "u"),
       FetchItem(lipsum2URL, 12L, bag.data / "sub" / "v"),
@@ -606,20 +608,20 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "return an empty list when the bag doesn't have a fetch.txt file" in {
-    simpleBag().fetchFiles shouldBe empty
+    simpleBagV0().fetchFiles shouldBe empty
   }
 
   it should "return an empty list when the bag has an empty fetch.txt file" in {
-    simpleBagDir / "fetch.txt" touch()
+    simpleBagDirV0 / "fetch.txt" touch()
 
-    simpleBag().fetchFiles shouldBe empty
+    simpleBagV0().fetchFiles shouldBe empty
   }
 
   "addFetch" should "add the fetch item to the bag's list of fetch items" in {
     val fetchFileSrc = lipsum1URL
     assumeCanConnect(fetchFileSrc)
 
-    val bag = fetchBag()
+    val bag = fetchBagV0()
 
     inside(bag.addFetchFile(fetchFileSrc, 12345L, _ / "to-be-fetched" / "lipsum2.txt")) {
       case Success(resultBag) =>
@@ -633,7 +635,7 @@ class BagSpec extends TestSupportFixture
     val fetchFileSrc = lipsum2URL
     assumeCanConnect(fetchFileSrc)
 
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     bag.payloadManifestAlgorithms should contain only(
       ChecksumAlgorithm.SHA1,
@@ -651,7 +653,7 @@ class BagSpec extends TestSupportFixture
     val fetchFileSrc = lipsum3URL
     assumeCanConnect(fetchFileSrc)
 
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     val beforeListing = bag.listRecursively.toList
 
@@ -669,7 +671,7 @@ class BagSpec extends TestSupportFixture
     val fetchFileSrc = lipsum4URL
     assumeCanConnect(fetchFileSrc)
 
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     forEvery(bag.tagManifests) {
       case (_, manifest) =>
         manifest should not contain key(bag.baseDir / "fetch.txt")
@@ -685,7 +687,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the destination already exists" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val fetchFileSrc = lipsum4URL
 
     bag.addFetchFile(fetchFileSrc, 12345L, _ / "x") should matchPattern {
@@ -694,7 +696,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the destination is not inside the bag/data directory" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val fetchFileSrc = lipsum5URL
 
     bag.addFetchFile(fetchFileSrc, 12345L, _ / ".." / "lipsum1.txt") should matchPattern {
@@ -703,7 +705,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file cannot be downloaded from the provided url" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     inside(bag.addFetchFile(new URL("http://x"), 12345L, _ / "to-be-fetched" / "failing-url.txt")) {
       // it's either one of these exceptions that is thrown
@@ -715,7 +717,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "removeFetchByFile" should "remove the fetch item from the list" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val relativePath: RelativePath = _ / "x"
     val absolutePath = relativePath(bag.data)
 
@@ -728,7 +730,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove the fetch item from all payload manifests" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val relativePath: RelativePath = _ / "x"
     val absolutePath = relativePath(bag.data)
 
@@ -747,7 +749,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove fetch.txt from all tag manifests when the last fetch file was removed" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
 
     val relativePath1: RelativePath = _ / "x"
     val relativePath2: RelativePath = _ / "y-old"
@@ -774,7 +776,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the fetch item is not a part of the bag" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val relativePath: RelativePath = _ / "not-existing-fetch-file"
     val absolutePath = relativePath(bag.data)
 
@@ -788,7 +790,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "removeFetchByURL" should "remove the fetch item from the list" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val url = lipsum1URL
 
     bag.fetchFiles.map(_.url) should contain(url)
@@ -800,7 +802,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove the fetch item from all payload manifests" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val url = lipsum1URL
 
     inside(bag.fetchFiles.find(_.url == url).map(_.file)) {
@@ -821,7 +823,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove fetch.txt from all tag manifests when the last fetch file was removed" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
 
     val url1 = lipsum1URL
     val url2 = lipsum2URL
@@ -848,7 +850,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the fetch item is not a part of the bag" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val url = new URL("http://not.existing/fetch/file")
 
     bag.fetchFiles.map(_.url) should not contain url
@@ -861,7 +863,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "removeFetch" should "remove the fetch item from the list" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val fetchItem = bag.fetchFiles.head
 
     val resultBag = bag.removeFetch(fetchItem)
@@ -869,7 +871,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove the fetch item from all payload manifests" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val fetchItem = bag.fetchFiles.head
 
     forEvery(bag.payloadManifests) {
@@ -886,7 +888,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove fetch.txt from all tag manifests when the last fetch file was removed" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
 
     val fetch1 :: fetch2 :: fetch3 :: fetch4 :: Nil = bag.fetchFiles.toList
 
@@ -907,7 +909,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "not fail when the fetch item is not a part of the bag" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val fetchItem = FetchItem(new URL("http://not.existing/fetch/file"), 12L, bag.data / "not-existing-fetch-file")
 
     bag.fetchFiles should not contain fetchItem
@@ -926,7 +928,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "payloadManifestAlgorithms" should "list all payload manifest algorithms that are being used in this bag" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     bag.payloadManifestAlgorithms should contain only(
       ChecksumAlgorithm.SHA1,
@@ -936,7 +938,7 @@ class BagSpec extends TestSupportFixture
 
   "addPayloadManifestAlgorithm" should "add a checksum algorithm to a bag and calculate the " +
     "checksum for all payload files" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = ChecksumAlgorithm.MD5
 
     inside(bag.addPayloadManifestAlgorithm(algorithm)) {
@@ -958,7 +960,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "by default not update the checksums when the algorithm is already used by the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = bag.payloadManifestAlgorithms.head
     val specialFile = bag.data / "x"
     val specialChecksum = "messed up checksum"
@@ -976,7 +978,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "when indicated, update the checksums when the algorithm is already used by the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = bag.payloadManifestAlgorithms.head
     val specialFile = bag.data / "x"
     val specialChecksum = "messed up checksum"
@@ -1003,7 +1005,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "not calculate any checksums when the bag contains no payload" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = ChecksumAlgorithm.MD5
     bag.data.delete().createDirectories()
     bag.data.isEmpty shouldBe true
@@ -1020,7 +1022,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "add the new manifest file to all tagmanifests present in the bag" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val algorithm = ChecksumAlgorithm.MD5
 
     val tagManifestsBefore = bag.tagManifests
@@ -1039,7 +1041,7 @@ class BagSpec extends TestSupportFixture
 
   it should "calculate and add the checksums of fetch files to the newly added manifest" in {
     assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL)
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val algorithm = ChecksumAlgorithm.MD5
 
     inside(bag.addPayloadManifestAlgorithm(algorithm)) {
@@ -1055,7 +1057,7 @@ class BagSpec extends TestSupportFixture
 
   "removePayloadManifestAlgorithm" should "remove a checksum algorithm from a bag, as well as " +
     "all it's checksums" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val algorithm = ChecksumAlgorithm.SHA1
 
     bag.payloadManifestAlgorithms should contain only(
@@ -1071,7 +1073,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "succeed when it removes the last checksum algorithm from the bag (should fail on save instead)" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = ChecksumAlgorithm.SHA1
 
     bag.payloadManifestAlgorithms should contain only algorithm
@@ -1084,7 +1086,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove the manifest file from all tagmanifests present in the bag" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val algorithm = ChecksumAlgorithm.SHA1
 
     val tagManifestsBefore = bag.tagManifests
@@ -1102,7 +1104,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the checksum algorithm is not present in the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = ChecksumAlgorithm.SHA256
 
     bag.payloadManifestAlgorithms should not contain algorithm
@@ -1114,7 +1116,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "tagManifestAlgorithms" should "list all tag manifest algorithms that are being used in this bag" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     bag.tagManifestAlgorithms should contain only(
       ChecksumAlgorithm.SHA1,
@@ -1124,7 +1126,7 @@ class BagSpec extends TestSupportFixture
 
   "addTagManifestAlgorithm" should "add a checksum algorithm to a bag and calculate the " +
     "checksum for all tag files" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = ChecksumAlgorithm.MD5
 
     inside(bag.addTagManifestAlgorithm(algorithm)) {
@@ -1145,7 +1147,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "by default not update the checksums when the algorithm is already used by the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = bag.tagManifestAlgorithms.head
     val specialFile = bag.data / "x"
     val specialChecksum = "messed up checksum"
@@ -1163,7 +1165,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "when indicated, update the checksums when the algorithm is already used by the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = bag.tagManifestAlgorithms.head
     val specialFile = bag / "bagit.txt"
     val specialChecksum = "messed up checksum"
@@ -1190,7 +1192,7 @@ class BagSpec extends TestSupportFixture
 
   "removeTagManifestAlgorithm" should "remove a checksum algorithm from a bag, as well as all " +
     "it's checksums" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val algorithm = ChecksumAlgorithm.SHA1
 
     bag.tagManifestAlgorithms should contain only(
@@ -1206,7 +1208,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "succeed when it removes the last checksum algorithm from the bag (should fail on save instead)" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = ChecksumAlgorithm.SHA1
 
     bag.tagManifestAlgorithms should contain only algorithm
@@ -1219,7 +1221,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the checksum algorithm is not present in the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = ChecksumAlgorithm.SHA256
 
     bag.tagManifestAlgorithms should not contain algorithm
@@ -1231,7 +1233,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "payloadManifests" should "list all entries in the manifest-<alg>.txt files" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val algorithms = List(ChecksumAlgorithm.SHA1, ChecksumAlgorithm.SHA256)
 
     bag.payloadManifests.keySet should contain theSameElementsAs algorithms
@@ -1250,7 +1252,7 @@ class BagSpec extends TestSupportFixture
 
   def addPayloadFile(addPayloadFile: Bag => File => RelativePath => Try[Bag]): Unit = {
     it should "copy the new file into the bag" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag.data)
@@ -1265,7 +1267,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "add the checksum for all algorithms in the bag to the payload manifest" in {
-      val bag = multipleManifestsBag()
+      val bag = multipleManifestsBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag.data)
@@ -1291,7 +1293,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination is outside the bag/data directory" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / ".." / ".." / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag.data)
@@ -1307,7 +1309,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination already exists" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / ".." / ".." / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag.data) createIfNotExists (createParents = true) writeText lipsum(1)
@@ -1324,7 +1326,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination is already mentioned in the fetch file" in {
-      val bag = fetchBag()
+      val bag = fetchBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "x"
       val dest = relativeDest(bag.data)
@@ -1354,7 +1356,7 @@ class BagSpec extends TestSupportFixture
   )
 
   it should "fail when the given file is a directory" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val newDir = testDir / "newDir" createDirectories()
     newDir / "file1.txt" createIfNotExists() writeText lipsum(1)
     newDir / "file2.txt" createIfNotExists() writeText lipsum(2)
@@ -1371,7 +1373,7 @@ class BagSpec extends TestSupportFixture
   "addPayloadFile with file" should behave like addPayloadFile(_.addPayloadFile)
 
   it should "recursively add the files and folders in the directory to the bag" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val newDir = testDir / "newDir" createDirectories()
     val file1 = newDir / "file1.txt" createIfNotExists() writeText lipsum(1)
     val file2 = newDir / "file2.txt" createIfNotExists() writeText lipsum(2)
@@ -1398,7 +1400,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "removePayloadFile" should "remove a payload file from the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag.data / "sub" / "u"
 
     file.toJava should exist
@@ -1409,7 +1411,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove the removed payload file from all manifests" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val file = bag.data / "x"
 
     bag.payloadManifests(ChecksumAlgorithm.SHA1) should contain key file
@@ -1423,7 +1425,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "clean up empty directories after the last payload file in a directory is removed" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = testDir / "a.txt" createIfNotExists (createParents = true) writeText "content of file a"
     val destination = bag.data / "path" / "to" / "file" / "a.txt"
 
@@ -1446,7 +1448,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "keep an empty bag/data directory if all files are removed from the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     val result = bag.removePayloadFile(_ / "x")
       .flatMap(_.removePayloadFile(_ / "y"))
@@ -1463,7 +1465,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove empty payload manifests from the bag" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     val files = List(
       bag.data / "x",
@@ -1496,7 +1498,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file does not exist" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag.data / "doesnotexist.txt"
 
     file.toJava shouldNot exist
@@ -1508,7 +1510,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file is not inside the bag/data directory" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag / "bagit.txt"
 
     file.toJava should exist
@@ -1522,7 +1524,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file to be removed is a directory" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag.data / "sub"
 
     file.toJava should exist
@@ -1542,7 +1544,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "tagManifests" should "list all entries in the tagmanifest-<alg>.txt files" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val algorithms = List(ChecksumAlgorithm.SHA1, ChecksumAlgorithm.SHA256)
 
     bag.tagManifests.keySet should contain theSameElementsAs algorithms
@@ -1561,7 +1563,7 @@ class BagSpec extends TestSupportFixture
 
   def addTagFile(addTagFile: Bag => File => RelativePath => Try[Bag]): Unit = {
     it should "copy the new file into the bag" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "metadata" / "temp" / "file-copy.txt"
       val dest = relativeDest(bag)
@@ -1576,7 +1578,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "add the checksum for all algorithms in the bag to the tag manifests" in {
-      val bag = multipleManifestsBag()
+      val bag = multipleManifestsBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "metadata" / "temp" / "file-copy.txt"
       val dest = relativeDest(bag)
@@ -1602,7 +1604,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination is inside the bag/data directory" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "data" / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag)
@@ -1618,7 +1620,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination is outside the bag directory" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / ".." / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag)
@@ -1634,7 +1636,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination already exists" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "metadata" / "dataset.xml"
       val dest = relativeDest(bag)
@@ -1652,7 +1654,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination points to bag/bag-info.txt, which was removed first" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "bag-info.txt"
       val dest = relativeDest(bag)
@@ -1670,7 +1672,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination points to bag/bagit.txt, which was removed first" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "bagit.txt"
       val dest = relativeDest(bag)
@@ -1688,7 +1690,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination points to bag/fetch.txt, which was removed first" in {
-      val bag = fetchBag()
+      val bag = fetchBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "fetch.txt"
       val dest = relativeDest(bag)
@@ -1706,7 +1708,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination points to bag/manifest-XXX.txt, which was removed first" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "manifest-sha1.txt"
       val dest = relativeDest(bag)
@@ -1724,7 +1726,7 @@ class BagSpec extends TestSupportFixture
     }
 
     it should "fail when the destination points to bag/tagmanifest-XXX.txt, which was removed first" in {
-      val bag = simpleBag()
+      val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
       val relativeDest: RelativePath = _ / "tagmanifest-sha1.txt"
       val dest = relativeDest(bag)
@@ -1747,7 +1749,7 @@ class BagSpec extends TestSupportFixture
   )
 
   it should "fail when the given file is a directory" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val newDir = testDir / "newDir" createDirectories()
     newDir / "file1.txt" createIfNotExists() writeText lipsum(1)
     newDir / "file2.txt" createIfNotExists() writeText lipsum(2)
@@ -1764,7 +1766,7 @@ class BagSpec extends TestSupportFixture
   "addTagFile with file" should behave like addTagFile(_.addTagFile)
 
   it should "recursively add the files and folders in the directory to the bag" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val newDir = testDir / "newDir" createDirectories()
     val file1 = newDir / "file1.txt" createIfNotExists() writeText lipsum(1)
     val file2 = newDir / "file2.txt" createIfNotExists() writeText lipsum(2)
@@ -1791,7 +1793,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "removeTagFile" should "remove a tag file from the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag / "metadata" / "dataset.xml"
 
     file.toJava should exist
@@ -1803,7 +1805,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "remove the removed tag file from all manifests" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
     val file = bag / "metadata" / "dataset.xml"
 
     bag.tagManifests(ChecksumAlgorithm.SHA1) should contain key file
@@ -1817,7 +1819,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "clean up empty directories after the last tag file in a directory is removed" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = testDir / "a.txt" createIfNotExists (createParents = true) writeText "content of file a"
     val destination = bag / "path" / "to" / "file" / "a.txt"
 
@@ -1840,7 +1842,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file does not exist" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag / "doesnotexist.txt"
 
     file.toJava shouldNot exist
@@ -1851,7 +1853,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file is inside the bag/data directory" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag.data / "x"
 
     file.toJava should exist
@@ -1864,7 +1866,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file is outside the bag directory" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag / ".." / "temp.txt" createIfNotExists() writeText "content of temp.txt"
 
     file.toJava should exist
@@ -1877,7 +1879,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file to remove is the bag directory itself" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     bag.toJava should exist
     //    bag.isChildOf(bag) shouldBe false // TODO why does this actually return true??? - https://github.com/pathikrit/better-files/issues/247
@@ -1889,7 +1891,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file is the bag/bag-info.txt file" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag / "bag-info.txt"
 
     file.toJava should exist
@@ -1902,7 +1904,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file is the bag/bagit.txt file" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag / "bagit.txt"
 
     file.toJava should exist
@@ -1915,7 +1917,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file is the bag/fetch.txt file" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
     val file = bag / "fetch.txt"
 
     file.toJava should exist
@@ -1928,7 +1930,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file is a bag/manifest-XXX.txt file" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag / "manifest-sha1.txt"
 
     file.toJava should exist
@@ -1941,7 +1943,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file is a bag/tagmanifest-XXX.txt file" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val file = bag / "tagmanifest-sha1.txt"
 
     file.toJava should exist
@@ -1954,7 +1956,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when the file is a directory" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val dir = bag / "metadata"
 
     dir.toJava should exist
@@ -1967,7 +1969,7 @@ class BagSpec extends TestSupportFixture
   }
 
   "save" should "save bagit.txt" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val bagitTxt = bag / "bagit.txt"
 
     // initial assumptions
@@ -2000,7 +2002,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "save bag-info.txt with updated payload-oxum and bagging-date" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val bagInfoTxt = bag / "bag-info.txt"
 
     // initial assumptions
@@ -2043,7 +2045,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2051,7 +2053,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "not save or create a fetch.txt when no fetch files were ever present" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val fetchTxt = bag / "fetch.txt"
 
     // initial assumptions
@@ -2067,7 +2069,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2077,7 +2079,7 @@ class BagSpec extends TestSupportFixture
   it should "create a fetch.txt file when fetch files were introduced to the bag for the first time" in {
     assumeCanConnect(lipsum1URL, lipsum2URL)
 
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     val fetchTxt = bag / "fetch.txt"
     val fetchItem1 = FetchItem(lipsum1URL, 12L, bag.data / "some-file1.txt")
@@ -2105,7 +2107,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2115,7 +2117,7 @@ class BagSpec extends TestSupportFixture
   it should "save fetch.txt when there were already fetch files in the bag" ignore { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/117
     assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
 
-    val bag = fetchBag()
+    val bag = fetchBagV0()
 
     val fetchTxt = bag / "fetch.txt"
     val existingFetchItem1 = FetchItem(lipsum1URL, 12L, bag.data / "sub" / "u")
@@ -2162,7 +2164,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2172,7 +2174,7 @@ class BagSpec extends TestSupportFixture
   it should "list the added fetch files in the payload manifests" in {
     assumeCanConnect(lipsum5URL)
 
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     val newFetchItem = FetchItem(lipsum5URL, 12L, bag.data / "some-file.txt")
 
@@ -2196,7 +2198,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2206,7 +2208,7 @@ class BagSpec extends TestSupportFixture
   it should "list fetch.txt in all tagmanifests" in {
     assumeCanConnect(lipsum5URL)
 
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     val newFetchItem = FetchItem(lipsum5URL, 12L, bag.data / "some-file.txt")
 
@@ -2230,7 +2232,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2238,7 +2240,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "delete fetch.txt when there were fetch files previously, but now they're gone" in {
-    val bag = fetchBag()
+    val bag = fetchBagV0()
 
     val fetchTxt = bag / "fetch.txt"
     val existingFetchItem1 = FetchItem(lipsum1URL, 12L, bag.data / "sub" / "u")
@@ -2274,7 +2276,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2282,7 +2284,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "update existing manifest-<alg>.txt files" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     val u = bag.data / "sub" / "u"
     val v = bag.data / "sub" / "v"
@@ -2312,7 +2314,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2320,7 +2322,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "create new manifest-<alg>.txt files for not yet existing manifests" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     val u = bag.data / "sub" / "u"
     val v = bag.data / "sub" / "v"
@@ -2352,7 +2354,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2360,7 +2362,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "delete old manifest-<alg>.txt files that are no longer in use" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     val u = bag.data / "sub" / "u"
     val v = bag.data / "sub" / "v"
@@ -2390,7 +2392,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2398,7 +2400,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "recompute the tag manifests and save them" in {
-    val bag = multipleManifestsBag()
+    val bag = multipleManifestsBagV0()
 
     val x = bag.data / "x"
     val y = bag.data / "y"
@@ -2448,7 +2450,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2456,7 +2458,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "create new tagmanifest-<alg>.txt files for not yet existing tagmanifests" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
 
     val newFileSrc = testDir / "newFile.txt" createIfNotExists() writeText lipsum(5)
     val newFile = bag / "metadata" / "lipsum5.txt"
@@ -2477,7 +2479,7 @@ class BagSpec extends TestSupportFixture
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
-    BagLinter.lintBag(bag.path) should contain only (
+    BagLinter.lintBag(bag.path) should contain only(
       BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
@@ -2485,7 +2487,7 @@ class BagSpec extends TestSupportFixture
   }
 
   it should "fail when no payload manifest is present in the bag" in {
-    val bag = simpleBag()
+    val bag = simpleBagV0()
     val algorithm = ChecksumAlgorithm.SHA1
 
     // initial assumptions

@@ -1,4 +1,4 @@
-package nl.knaw.dans.bag
+package nl.knaw.dans.bag.fixtures
 
 import java.net.URL
 

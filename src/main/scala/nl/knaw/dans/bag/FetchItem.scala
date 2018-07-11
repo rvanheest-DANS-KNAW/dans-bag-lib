@@ -1,9 +1,10 @@
-package nl.knaw.dans.bag.v0
+package nl.knaw.dans.bag
 
 import java.net.URL
 
 import better.files.File
 import gov.loc.repository.bagit.domain.{ FetchItem => LocFetchItem }
+
 import scala.language.implicitConversions
 
 case class FetchItem(url: URL, length: Long, file: File)

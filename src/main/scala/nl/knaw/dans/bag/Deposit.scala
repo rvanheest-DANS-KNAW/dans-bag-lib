@@ -1,21 +1,21 @@
-package nl.knaw.dans.bag.v0
+package nl.knaw.dans.bag
 
 import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException }
 import java.util.{ Objects, UUID }
 
 import better.files.File
-import nl.knaw.dans.bag.v0.ChecksumAlgorithm.ChecksumAlgorithm
-import nl.knaw.dans.bag.v0.Deposit._
-import nl.knaw.dans.bag.v0.SpringfieldPlayMode.SpringfieldPlayMode
-import nl.knaw.dans.bag.v0.StageState.StageState
-import nl.knaw.dans.bag.v0.StateLabel.StateLabel
+import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
+import nl.knaw.dans.bag.Deposit._
+import nl.knaw.dans.bag.SpringfieldPlayMode.SpringfieldPlayMode
+import nl.knaw.dans.bag.StageState.StageState
+import nl.knaw.dans.bag.StateLabel.StateLabel
 import org.joda.time.DateTime
 
 import scala.language.{ implicitConversions, postfixOps }
 import scala.util.{ Failure, Success, Try }
 
 class Deposit private(val baseDir: File,
-                      val bag: Bag,
+                      val bag: IBag,
                       private val properties: DepositProperties) {
 
   override def equals(obj: Any): Boolean = {
@@ -334,7 +334,7 @@ class Deposit private(val baseDir: File,
 }
 object Deposit {
 
-  private val depositPropertiesName = "deposit.properties"
+  val depositPropertiesName = "deposit.properties"
 
   def empty(baseDir: File,
             algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
@@ -346,7 +346,7 @@ object Deposit {
       Failure(new FileAlreadyExistsException(baseDir.toString))
     else
       for {
-        bag <- Bag.empty(baseDir / bagStore.bagId.toString, algorithms, bagInfo)
+        bag <- IBag.empty(baseDir / bagStore.bagId.toString, algorithms, bagInfo)
         properties = DepositProperties.empty(state, depositor, bagStore)
         _ <- properties.save(depositProperties(baseDir))
       } yield new Deposit(baseDir, bag, properties)
@@ -363,7 +363,7 @@ object Deposit {
     else {
       for {
         bagDir <- moveBag(payloadDir, bagStore.bagId)
-        bag <- Bag.createFromData(bagDir, algorithms, bagInfo)
+        bag <- IBag.createFromData(bagDir, algorithms, bagInfo)
         properties = DepositProperties.empty(state, depositor, bagStore)
         _ <- properties.save(depositProperties(payloadDir))
       } yield new Deposit(payloadDir, bag, properties)
@@ -373,7 +373,7 @@ object Deposit {
   def read(baseDir: File): Try[Deposit] = {
     for {
       bagDir <- findBagDir(baseDir)
-      bag <- Bag.read(bagDir)
+      bag <- IBag.read(bagDir)
       properties <- DepositProperties.read(depositProperties(baseDir))
     } yield new Deposit(baseDir, bag, properties)
   }

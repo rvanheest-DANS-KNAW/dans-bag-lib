@@ -1,4 +1,4 @@
-package nl.knaw.dans.bag
+package nl.knaw.dans
 
 import java.nio.file.Path
 
@@ -6,7 +6,7 @@ import better.files.File
 
 import scala.language.implicitConversions
 
-package object v0 {
+package object bag {
 
   type RelativePath = File => File
 

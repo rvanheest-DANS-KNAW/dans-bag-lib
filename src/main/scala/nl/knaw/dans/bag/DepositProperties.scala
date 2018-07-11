@@ -1,13 +1,13 @@
-package nl.knaw.dans.bag.v0
+package nl.knaw.dans.bag
 
 import java.nio.file.NoSuchFileException
 import java.util.UUID
 
 import better.files.File
-import nl.knaw.dans.bag.v0.DepositProperties._
-import nl.knaw.dans.bag.v0.SpringfieldPlayMode.SpringfieldPlayMode
-import nl.knaw.dans.bag.v0.StageState.StageState
-import nl.knaw.dans.bag.v0.StateLabel.StateLabel
+import nl.knaw.dans.bag.DepositProperties._
+import nl.knaw.dans.bag.SpringfieldPlayMode.SpringfieldPlayMode
+import nl.knaw.dans.bag.StageState.StageState
+import nl.knaw.dans.bag.StateLabel.StateLabel
 import org.apache.commons.configuration.PropertiesConfiguration
 import org.apache.commons.lang.BooleanUtils
 import org.joda.time.DateTime

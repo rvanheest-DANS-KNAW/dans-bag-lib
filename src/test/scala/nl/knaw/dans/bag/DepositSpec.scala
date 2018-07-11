@@ -1,11 +1,11 @@
-package nl.knaw.dans.bag.v0
+package nl.knaw.dans.bag
 
 import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException }
 import java.text.SimpleDateFormat
 import java.util.{ Date, UUID }
 
 import better.files.File
-import nl.knaw.dans.bag._
+import nl.knaw.dans.bag.fixtures._
 import org.apache.commons.configuration.PropertiesConfiguration
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{ DateTime, DateTimeZone }
@@ -324,15 +324,15 @@ class DepositSpec extends TestSupportFixture
   }
 
   "read" should "load a valid deposit on filesystem into a Deposit object" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     // this method is actually tested in all other methods, since it is used to read all test bags
     // therefore just a single simple check here
-    deposit.baseDir shouldBe simpleDepositDir
+    deposit.baseDir shouldBe simpleDepositDirV0
   }
 
   it should "fail when a deposit does not contain a directory (which might classify as a bag)" in {
-    val depositDir = simpleDepositDir
+    val depositDir = simpleDepositDirV0
     val bagDir = depositDir / "1c2f78a1-26b8-4a40-a873-1073b9f3a56a"
 
     bagDir.toJava should exist
@@ -346,7 +346,7 @@ class DepositSpec extends TestSupportFixture
   }
 
   it should "fail when a deposit contains multiple directories (which might classify as a bag)" in {
-    val depositDir = simpleDepositDir
+    val depositDir = simpleDepositDirV0
     depositDir / "other-directory" createDirectory()
 
     depositDir.list.count(_.isDirectory) shouldBe 2
@@ -358,25 +358,25 @@ class DepositSpec extends TestSupportFixture
   }
 
   "baseDir" should "return the deposit's base directory" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
-    deposit.baseDir shouldBe simpleDepositDir
+    deposit.baseDir shouldBe simpleDepositDirV0
   }
 
   "bag" should "return the Deposit's bag object" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
-    deposit.bag.baseDir shouldBe simpleDepositDir / "1c2f78a1-26b8-4a40-a873-1073b9f3a56a"
+    deposit.bag.baseDir shouldBe simpleDepositDirV0 / "1c2f78a1-26b8-4a40-a873-1073b9f3a56a"
   }
 
   "creationTimestamp" should "return the creation timestamp from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.creationTimestamp.getMillis shouldBe new DateTime(2018, 5, 25, 20, 8, 56, 210, DateTimeZone.forOffsetHoursMinutes(2, 0)).getMillis
   }
 
   "withCreationTimestamp" should "change the creation timestamp and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val timestamp = fixedDateTimeNow
 
     val resultDeposit = deposit.withCreationTimestamp(timestamp)
@@ -385,19 +385,19 @@ class DepositSpec extends TestSupportFixture
   }
 
   "stateLabel" should "return the state label from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.stateLabel shouldBe StateLabel.SUBMITTED
   }
 
   "stateDescription" should "return the state description from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.stateDescription shouldBe "Deposit is valid, and ready for post-submission processing"
   }
 
   "withState" should "change the state label and description and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val label = StateLabel.ARCHIVED
     val description = "deposit is now archived"
 
@@ -408,13 +408,13 @@ class DepositSpec extends TestSupportFixture
   }
 
   "depositor" should "return the userId of the depositor from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.depositor shouldBe "myuser"
   }
 
   "withDepositor" should "change the depositor's id and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val depositor = "other-depositor"
 
     val resultDeposit = deposit.withDepositor(depositor)
@@ -423,19 +423,19 @@ class DepositSpec extends TestSupportFixture
   }
 
   "bagId" should "return the bagId of the deposit from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.bagId shouldBe UUID.fromString("1c2f78a1-26b8-4a40-a873-1073b9f3a56a")
   }
 
   "isArchived" should "return the isArchived property from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.isArchived.value shouldBe true
   }
 
   "withIsArchived" should "change the isArchived property and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val isArchived = false
 
     val resultDeposit = deposit.withIsArchived(isArchived)
@@ -444,20 +444,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutIsArchived" should "remove the isArchived property and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutIsArchived
 
     resultDeposit.isArchived shouldBe empty
   }
 
   "doi" should "return the doi of this deposit from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.doi.value shouldBe "some-random-doi"
   }
 
   "withDoi" should "change the doi of this deposit and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val doi = "other-doi"
 
     val resultDeposit = deposit.withDoi(doi)
@@ -466,20 +466,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutDoi" should "remove the doi of this deposit and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutDoi
 
     resultDeposit.doi shouldBe empty
   }
 
   "dataManagerId" should "return the datamanager's id from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.dataManagerId.value shouldBe "myadmin"
   }
 
   "withDataManagerId" should "change the datamanager's id and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val datamanagerId = "id"
 
     val resultDeposit = deposit.withDataManagerId(datamanagerId)
@@ -488,20 +488,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutIsArchived" should "remove the datamanager's id and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutIsArchived
 
     resultDeposit.isArchived shouldBe empty
   }
 
   "dataManagerEmail" should "return the datamanager's email from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.dataManagerEmail.value shouldBe "FILL.IN.YOUR@VALID-EMAIL.NL"
   }
 
   "withDataManagerEmail" should "change the datamanager's email and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val datamanagerEmail = "me@email.com"
 
     val resultDeposit = deposit.withDataManagerEmail(datamanagerEmail)
@@ -510,20 +510,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutDataManagerEmail" should "remove the datamanager's email and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutDataManagerEmail
 
     resultDeposit.dataManagerEmail shouldBe empty
   }
 
   "isNewVersion" should "return the isNewVersion property from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.isNewVersion.value shouldBe false
   }
 
   "withIsNewVersion" should "change the isNewVersion property and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val isNewVersion = true
 
     val resultDeposit = deposit.withIsNewVersion(isNewVersion)
@@ -532,20 +532,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutIsNewVersion" should "remove the isNewVersion property and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutIsNewVersion
 
     resultDeposit.isNewVersion shouldBe empty
   }
 
   "isCurationRequired" should "return the isCurationRequired property from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.isCurationRequired.value shouldBe true
   }
 
   "withIsCurationRequired" should "change the isCurationRequired property and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val required = false
 
     val resultDeposit = deposit.withIsCurationRequired(required)
@@ -554,20 +554,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutIsCurationRequired" should "remove the isCurationRequired property and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutIsCurationRequired
 
     resultDeposit.isCurationRequired shouldBe empty
   }
 
   "isCurationPerformed" should "return the isCurationPerformed property from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.isCurationPerformed.value shouldBe false
   }
 
   "withIsCurationPerformed" should "change the isCurationPerformed property and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val performed = true
 
     val resultDeposit = deposit.withIsCurationPerformed(performed)
@@ -576,20 +576,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutIsCurationPerformed" should "remove the isCurationPerformed property and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutIsCurationPerformed
 
     resultDeposit.isCurationPerformed shouldBe empty
   }
 
   "springfieldDomain" should "return the Springfield domain from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.springfieldDomain.value shouldBe "mydomain"
   }
 
   "withSpringfieldDomain" should "change the Springfield domain and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val domain = "other-domain"
 
     val resultDeposit = deposit.withSpringfieldDomain(domain)
@@ -598,20 +598,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutSpringfieldDomain" should "remove the Springfield domain and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutSpringfieldDomain
 
     resultDeposit.springfieldDomain shouldBe empty
   }
 
   "springfieldUser" should "return the Springfield user from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.springfieldUser.value shouldBe "myname"
   }
 
   "withSpringfieldUser" should "change the Springfield user and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val user = "other-user"
 
     val resultDeposit = deposit.withSpringfieldUser(user)
@@ -620,20 +620,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutSpringfieldUser" should "remove the Springfield user and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutSpringfieldUser
 
     resultDeposit.springfieldUser shouldBe empty
   }
 
   "springfieldCollection" should "return the Springfield collection from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.springfieldCollection.value shouldBe "my-test-files"
   }
 
   "withSpringfieldCollection" should "change the Springfield collection and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val collection = "other-collection"
 
     val resultDeposit = deposit.withSpringfieldCollection(collection)
@@ -642,20 +642,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutSpringfieldCollection" should "remove the Springfield collection and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutSpringfieldCollection
 
     resultDeposit.springfieldCollection shouldBe empty
   }
 
   "springfieldPlayMode" should "return the Springfield playmode from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.springfieldPlayMode.value shouldBe SpringfieldPlayMode.CONTINUOUS
   }
 
   "withSpringfieldPlayMode" should "change the Springfield playmode and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val playMode = SpringfieldPlayMode.MENU
 
     val resultDeposit = deposit.withSpringfieldPlayMode(playMode)
@@ -664,20 +664,20 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutSpringfieldPlayMode" should "remove the Springfield playmode and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutSpringfieldPlayMode
 
     resultDeposit.springfieldPlayMode shouldBe empty
   }
 
   "stageState" should "return the stage state from deposit.properties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.stageState.value shouldBe StageState.ARCHIVED
   }
 
   "withStageState" should "change the stage state and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val stageState = StageState.DRAFT
 
     val resultDeposit = deposit.withStageState(stageState)
@@ -686,14 +686,14 @@ class DepositSpec extends TestSupportFixture
   }
 
   "withoutStageState" should "remove the stage state and return the new DepositProperties" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val resultDeposit = deposit.withoutStageState
 
     resultDeposit.stageState shouldBe empty
   }
 
   "save" should "write changes made to the Bag object in the bag to the deposit on file system" in {
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
     val newFile = testDir / "new-file" writeText lipsum(5)
     val relativeDest: RelativePath = _ / "abc.txt"
     val dest = relativeDest(deposit.bag.data)
@@ -732,12 +732,12 @@ class DepositSpec extends TestSupportFixture
     val stateDescription = "deposit is archived"
     val doi = "0123456789abcdef"
 
-    simpleDeposit()
+    simpleDepositV0()
       .withState(stateLabel, stateDescription)
       .withDoi(doi)
       .save() shouldBe a[Success[_]]
 
-    val deposit = simpleDeposit()
+    val deposit = simpleDepositV0()
 
     deposit.stateLabel shouldBe stateLabel
     deposit.stateDescription shouldBe stateDescription

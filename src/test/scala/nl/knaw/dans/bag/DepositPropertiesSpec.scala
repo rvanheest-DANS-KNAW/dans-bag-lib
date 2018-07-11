@@ -1,9 +1,9 @@
-package nl.knaw.dans.bag.v0
+package nl.knaw.dans.bag
 
 import java.nio.file.NoSuchFileException
 import java.util.UUID
 
-import nl.knaw.dans.bag.{ FileSystemSupport, FixDateTimeNow, TestDeposits, TestSupportFixture }
+import nl.knaw.dans.bag.fixtures.{ FileSystemSupport, FixDateTimeNow, TestDeposits, TestSupportFixture }
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{ DateTime, DateTimeUtils, DateTimeZone }
 
@@ -49,7 +49,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
   }
 
   "read" should "read the properties from a deposit.properties with all properties in use" in {
-    val props = simpleDepositProperties
+    val props = simpleDepositPropertiesV0
     props.creation.timestamp.toString(ISODateTimeFormat.dateTime()) shouldBe new DateTime(2018, 5, 25, 20, 8, 56, 210, DateTimeZone.forOffsetHoursMinutes(2, 0)).toString(ISODateTimeFormat.dateTime())
 
     props.state.label shouldBe StateLabel.SUBMITTED
@@ -77,7 +77,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
   }
 
   it should "read the properties from a deposit.properties with minimal properties" in {
-    val props = minimalDepositProperties
+    val props = minimalDepositProperties0
     props.creation.timestamp.toString(ISODateTimeFormat.dateTime()) shouldBe new DateTime(2018, 5, 25, 20, 8, 56, 210, DateTimeZone.forOffsetHoursMinutes(2, 0)).toString(ISODateTimeFormat.dateTime())
 
     props.state.label shouldBe StateLabel.SUBMITTED
@@ -105,7 +105,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
   }
 
   it should "fail if the file does not exist" in {
-    val file = simpleDepositDir / "non-existing-deposit.properties"
+    val file = simpleDepositDirV0 / "non-existing-deposit.properties"
     inside(DepositProperties.read(file)) {
       case Failure(e: NoSuchFileException) =>
         e should have message s"$file does not exist or isn't a file"
@@ -113,7 +113,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
   }
 
   it should "fail if the given better.files.File is not a regular file" in {
-    val file = simpleDepositDir
+    val file = simpleDepositDirV0
     inside(DepositProperties.read(file)) {
       case Failure(e: NoSuchFileException) =>
         e should have message s"$file does not exist or isn't a file"
@@ -121,7 +121,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
   }
 
   "copy" should "change properties" in {
-    val props = simpleDepositProperties
+    val props = simpleDepositPropertiesV0
 
     val newProps = props.copy(
       state = props.state.copy(label = StateLabel.STALLED),
@@ -133,14 +133,14 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
   }
 
   "save" should "write a changed DepositProperties to file" in {
-    val props = simpleDepositProperties
+    val props = simpleDepositPropertiesV0
 
     val newProps = props.copy(
       state = props.state.copy(label = StateLabel.STALLED),
       bagStore = props.bagStore.copy(archived = None)
     )
 
-    val file = simpleDepositDir / "deposit2.properties"
+    val file = simpleDepositDirV0 / "deposit2.properties"
     file.toJava shouldNot exist
 
     newProps.save(file)
@@ -149,7 +149,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
     val newProps2: DepositProperties = DepositProperties.read(file)
     newProps2 shouldBe newProps
 
-    val file2 = simpleDepositDir / "deposit3.properties"
+    val file2 = simpleDepositDirV0 / "deposit3.properties"
     file2.toJava shouldNot exist
 
     newProps2.save(file2)

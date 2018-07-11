@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.bag
+package nl.knaw.dans.bag.fixtures
 
 import java.net.{ HttpURLConnection, URL }
 

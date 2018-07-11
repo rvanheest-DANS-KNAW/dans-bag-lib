@@ -1,4 +1,4 @@
-package nl.knaw.dans.bag.v0
+package nl.knaw.dans.bag
 
 import java.security.MessageDigest
 
