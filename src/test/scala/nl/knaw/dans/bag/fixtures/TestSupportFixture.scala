@@ -6,4 +6,5 @@ trait TestSupportFixture extends FlatSpec
   with Matchers
   with Inside
   with OptionValues
+  with EitherValues
   with Inspectors

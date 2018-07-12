@@ -384,6 +384,23 @@ trait DansBag {
    *         `scala.util.Failure` otherwise
    */
   def save(): Try[Unit]
+
+  /**
+   * Verifies if a bag is complete.
+   * According to the BagIt v16 specs, a bag is complete when:
+   * <ul>
+   *   <li>bagit.txt is present</li>
+   *   <li>data/ directory is present</li>
+   *   <li>at least one payload manifest exists</li>
+   *   <li>all fetch items are present in the bag</li>
+   *   <li>(>= v1.0 bag) all files in the payload directory are listed in all payload manifests</li>
+   *   <li>(< v1.0 bag) all files in the payload directory are listed in at least one payload manifest</li>
+   * </ul>
+   *
+   * @return either `Unit` (if the bag is complete) or `String` (containing the error message if
+   *         the bag is not complete)
+   */
+  def isComplete: Either[String, Unit]
 }
 
 object DansBag {

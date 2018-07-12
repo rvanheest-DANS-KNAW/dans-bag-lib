@@ -2507,4 +2507,75 @@ class DansV0BagSpec extends TestSupportFixture
         }
     }
   }
+
+  "isComplete" should "succeed on a complete bag" in {
+    val bag = simpleBagV0()
+
+    (bag / "bagit.txt").toJava should exist
+    bag.data.toJava should exist
+    bag.glob("manifest-*.txt").toList should not be empty
+    bag.fetchFiles shouldBe empty
+
+    bag.isComplete shouldBe 'right
+  }
+
+  it should "succeed on a complete bag with resolved fetch files" in {
+    val bag = fetchBagV0()
+    bag.data / "sub" createDirectory()
+    lipsum1File.copyTo(bag.data / "sub" / "u")
+    lipsum1File.copyTo(bag.data / "sub" / "v")
+    lipsum1File.copyTo(bag.data / "y-old")
+    lipsum1File.copyTo(bag.data / "x")
+
+    (bag / "bagit.txt").toJava should exist
+    bag.data.toJava should exist
+    bag.glob("manifest-*.txt").toList should not be empty
+    every(bag.fetchFiles.map(_.file.toJava)) should exist
+
+    bag.isComplete shouldBe 'right
+  }
+
+  it should "fail when bagit.txt does not exists" in {
+    val bag = simpleBagV0()
+
+    bag / "bagit.txt" delete()
+
+    bag.isComplete.left.value shouldBe s"File [${ bag / "bagit.txt" }] should exist but it doesn't!"
+  }
+
+  it should "fail when no data/ directory is present" in pendingUntilFixed { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/123
+    val bag = simpleBagV0()
+
+    bag.data.delete()
+
+    bag.isComplete.left.value shouldBe s"File [${ bag.data }] should exist but it doesn't!"
+  }
+
+  it should "fail when no payload manifest exists" in {
+    val bag = multipleManifestsBagV0()
+
+    bag.glob("manifest-*.txt").foreach(_.delete())
+
+    bag.isComplete.left.value shouldBe "Bag does not contain a payload manifest file!"
+  }
+
+  it should "fail when not all fetch files are resolved" in {
+    val bag = fetchBagV0()
+
+    bag.isComplete.left.value shouldBe s"Fetch item [$lipsum1URL 12 ${ bag.data / "sub" / "u" }] has not been fetched!"
+  }
+
+  it should "fail when not all files are listed in all payload manifests" in {
+    val bagDir = multipleManifestsBagDirV0
+    bagDir / "manifest-sha1.txt" writeText ""
+
+    val bag = multipleManifestsBagV0().withBagitVersion(1, 0)
+
+    bag.payloadManifests(ChecksumAlgorithm.SHA1) shouldBe empty
+
+    bag.isComplete.left.value should (
+      startWith("File [") and
+        endWith("] is in the payload directory but isn't listed in manifest manifest-sha1.txt!")
+      )
+  }
 }

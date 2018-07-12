@@ -11,6 +11,7 @@ import gov.loc.repository.bagit.creator.BagCreator
 import gov.loc.repository.bagit.domain.{ Version, Bag => LocBag, Manifest => LocManifest, Metadata => LocMetadata }
 import gov.loc.repository.bagit.reader.BagReader
 import gov.loc.repository.bagit.util.PathUtils
+import gov.loc.repository.bagit.verify.BagVerifier
 import gov.loc.repository.bagit.writer.{ BagitFileWriter, FetchWriter, ManifestWriter, MetadataWriter }
 import nl.knaw.dans.bag.ChecksumAlgorithm.{ ChecksumAlgorithm, locDeconverter }
 import nl.knaw.dans.bag.{ ChecksumAlgorithm, FetchItem, DansBag, RelativePath, betterFileToPath }
@@ -497,6 +498,17 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
     for (file <- this.glob("tagmanifest-*.txt"))
       file.delete()
     ManifestWriter.writeTagManifests(locBag.getTagManifests, baseDir, baseDir, fileEncoding)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  // TODO test
+  override def isComplete: Either[String, Unit] = {
+    Try { new ManagedResource(new BagVerifier()).apply(_.isComplete(this.locBag, false)) } match {
+      case Success(()) => Right()
+      case Failure(e) => Left(e.getMessage)
+    }
   }
 
   protected def openConnection(url: URL): ManagedResource[URLConnection] = {

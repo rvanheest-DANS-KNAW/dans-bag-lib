@@ -2,9 +2,16 @@ package nl.knaw.dans.bag.fixtures
 
 import java.net.URL
 
+import better.files.File
+
 trait FetchFileMetadata {
   this: TestSupportFixture =>
 
+  def findFile(pathRelativeToTestResources: String): File = {
+    File(getClass.getResource(pathRelativeToTestResources))
+  }
+
+  val lipsum1File: File = findFile("/fetch-files/lipsum1.txt")
   val lipsum1URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum1.txt")
@@ -14,6 +21,7 @@ trait FetchFileMetadata {
   val lipsum1Sha512: String = "220ab5bd2008b9f8a03f2738925dc1367d51d26708571c590323d5f5aa2310d6" +
     "19d5cdbb6f0f84be9145643ac793dd63eaee407e51d6dacd5ba3c1d8f6fe07da"
 
+  val lipsum2File: File = findFile("/fetch-files/lipsum2.txt")
   val lipsum2URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum2.txt")
@@ -23,6 +31,7 @@ trait FetchFileMetadata {
   val lipsum2Sha512: String = "a1fff27b172765ac4d6a0b461647f8f63f6c65e3833c9656886da5663721917d" +
     "d4086396119e2ebaadd79548d623d8dfa350f854af6271da68311abb1c0e73e8"
 
+  val lipsum3File: File = findFile("/fetch-files/lipsum3.txt")
   val lipsum3URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum3.txt")
@@ -32,6 +41,7 @@ trait FetchFileMetadata {
   val lipsum3Sha512: String = "a55358721ff1bf6394427c73a67104c3e182f95062c4e7a1a367fb860c1b98ae" +
     "647c11784b75eed3a20ac60efda146f040daeaa3837fa3aba9a2b94e30da0965"
 
+  val lipsum4File: File = findFile("/fetch-files/lipsum4.txt")
   val lipsum4URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum4.txt")
@@ -41,6 +51,7 @@ trait FetchFileMetadata {
   val lipsum4Sha512: String = "998801f04fe63e474ccd3a76f72467b7bac2a638ad79ef5427b1fc63426afafe" +
     "e7e3639cba8c3a864fea8a6f58fc0a37310b3f4550466d8ff2c9ba0835bb3231"
 
+  val lipsum5File: File = findFile("/fetch-files/lipsum5.txt")
   val lipsum5URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum5.txt")
