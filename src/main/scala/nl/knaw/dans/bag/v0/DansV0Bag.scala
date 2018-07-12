@@ -507,7 +507,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
    */
   override def isComplete: Either[String, Unit] = {
     Try { new ManagedResource(new BagVerifier()).apply(_.isComplete(this.locBag, false)) } match {
-      case Success(()) => Right()
+      case Success(()) => Right(())
       case Failure(e) => Left(e.getMessage)
     }
   }
@@ -517,7 +517,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
    */
   override def isValid: Either[String, Unit] = {
     Try { new ManagedResource(new BagVerifier()).apply(_.isValid(this.locBag, false)) } match {
-      case Success(()) => Right()
+      case Success(()) => Right(())
       case Failure(e) => Left(e.getMessage)
     }
   }
