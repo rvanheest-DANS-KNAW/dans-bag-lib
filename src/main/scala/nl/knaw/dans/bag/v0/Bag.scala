@@ -25,10 +25,19 @@ import scala.util.{ Failure, Success, Try }
 
 class Bag private(private[v0] val locBag: LocBag) extends IBag {
 
+  /**
+   * @inheritdoc
+   */
   override def equals(obj: Any): Boolean = locBag.equals(obj)
 
+  /**
+   * @inheritdoc
+   */
   override def hashCode(): Int = locBag.hashCode()
 
+  /**
+   * @inheritdoc
+   */
   override def toString: String = locBag.toString
 
   /**
