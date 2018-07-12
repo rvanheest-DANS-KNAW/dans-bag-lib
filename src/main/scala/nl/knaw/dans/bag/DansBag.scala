@@ -8,12 +8,13 @@ import java.util.UUID
 import better.files.File
 import gov.loc.repository.bagit.domain.{ Version => LocVersion }
 import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
+import nl.knaw.dans.bag.v0.DansV0Bag
 import org.joda.time.DateTime
 
 import scala.language.implicitConversions
 import scala.util.Try
 
-trait IBag {
+trait DansBag {
 
   /**
    * The base directory of the bag this object represents
@@ -37,7 +38,7 @@ trait IBag {
    * @param version the new `Version` of the bag
    * @return this bag, with the new `Version`
    */
-  def withBagitVersion(version: LocVersion): IBag
+  def withBagitVersion(version: LocVersion): DansBag
 
   /**
    * Change the bag's `gov.loc.repository.bagit.domain.Version` to a new `Version`.
@@ -47,7 +48,7 @@ trait IBag {
    * @param minor minor part of the version number
    * @return this bag, with a new `Version` comprised of the `major` and `minor` inputs
    */
-  def withBagitVersion(major: Int, minor: Int): IBag
+  def withBagitVersion(major: Int, minor: Int): DansBag
 
   /**
    * @return the bag's `java.nio.charset.Charset`, which is stored in `bagit.txt`
@@ -61,7 +62,7 @@ trait IBag {
    * @param charset the new `Charset` of the bag
    * @return this bag, with the new `Charset`
    */
-  def withFileEncoding(charset: Charset): IBag
+  def withFileEncoding(charset: Charset): DansBag
 
   /**
    * List all entries of `bag/bag-info.txt`. Key-value pairs will be grouped on key, such that if
@@ -79,7 +80,7 @@ trait IBag {
    * @param value the value of the new entry
    * @return this bag, with the new entry added
    */
-  def addBagInfo(key: String, value: String): IBag
+  def addBagInfo(key: String, value: String): DansBag
 
   /**
    * Remove all entries with the given key. Please note that this will only be synced with
@@ -88,7 +89,7 @@ trait IBag {
    * @param key the key to be removed
    * @return this bag, without the removed entries
    */
-  def removeBagInfo(key: String): IBag
+  def removeBagInfo(key: String): DansBag
 
   /**
    * Retrieves the value for key 'Created' from `bag-info.txt` as a parsed `org.joda.time.DateTime`
@@ -107,7 +108,7 @@ trait IBag {
    * @param created the `DateTime` object on which the bag's content was created
    * @return this bag, with the new value for 'Created' in `bag-info.txt`
    */
-  def withCreated(created: DateTime = DateTime.now()): IBag
+  def withCreated(created: DateTime = DateTime.now()): DansBag
 
   /**
    * Remove the entry with key 'Created' from `bag-info.txt`.
@@ -115,7 +116,7 @@ trait IBag {
    *
    * @return this bag, without the removed entry
    */
-  def withoutCreated(): IBag
+  def withoutCreated(): DansBag
 
   /**
    * Retrieves the value for key 'Is-Version-Of' from `bag-info.txt` as a `java.net.URI` object.
@@ -136,7 +137,7 @@ trait IBag {
    * @param uuid the `UUID` of the previous revision of this bag
    * @return this bag, with the new value for 'Is-Version-Of' in `bag-info.txt`
    */
-  def withIsVersionOf(uuid: UUID): IBag
+  def withIsVersionOf(uuid: UUID): DansBag
 
   /**
    * Remove the entry with key 'Is-Version-Of' from `bag-info.txt`.
@@ -144,7 +145,7 @@ trait IBag {
    *
    * @return this bag, without the removed entry
    */
-  def withoutIsVersionOf(): IBag
+  def withoutIsVersionOf(): DansBag
 
   /**
    * Lists all files that are stated in `fetch.txt`.
@@ -155,16 +156,16 @@ trait IBag {
 
   // TODO document
   // TODO this may cause latency, due to downloading of file. Wrapping in a Promise/Observable is recommended!
-  def addFetchFile(url: URL, length: Long, pathInData: RelativePath): Try[IBag]
+  def addFetchFile(url: URL, length: Long, pathInData: RelativePath): Try[DansBag]
 
   // TODO document
-  def removeFetchByFile(pathInData: RelativePath): Try[IBag]
+  def removeFetchByFile(pathInData: RelativePath): Try[DansBag]
 
   // TODO document
-  def removeFetchByURL(url: URL): Try[IBag]
+  def removeFetchByURL(url: URL): Try[DansBag]
 
   // TODO document
-  def removeFetch(item: FetchItem): IBag
+  def removeFetch(item: FetchItem): DansBag
 
   /**
    * List all algorithms that are being used in this bag to calculate the checksums of the payload files.
@@ -198,7 +199,7 @@ trait IBag {
    * @return this bag, with the new algorithm added
    */
   def addPayloadManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm,
-                                  updateManifest: Boolean = false): Try[IBag]
+                                  updateManifest: Boolean = false): Try[DansBag]
 
   /**
    * Remove an algorithm from the bag, which was used for calculating the checksums of the payload files.
@@ -210,7 +211,7 @@ trait IBag {
    * @param checksumAlgorithm the algorithm to be removed from the bag with respect to the payload files
    * @return this bag, without the removed algorithm
    */
-  def removePayloadManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm): Try[IBag]
+  def removePayloadManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm): Try[DansBag]
 
   /**
    * List all algorithms that are being used in this bag to calculate the checksums of the tag files.
@@ -233,7 +234,7 @@ trait IBag {
    * @return this bag, with the new algorithm added
    */
   def addTagManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm,
-                              updateManifest: Boolean = false): Try[IBag]
+                              updateManifest: Boolean = false): Try[DansBag]
 
   /**
    * Remove an algorithm from the bag, which was used for calculating the checksums of the tag files.
@@ -244,7 +245,7 @@ trait IBag {
    * @param checksumAlgorithm the algorithm to be removed from the bag with respect to the tag files
    * @return this bag, without the removed algorithm
    */
-  def removeTagManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm): Try[IBag]
+  def removeTagManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm): Try[DansBag]
 
   /**
    * For each algorithm, list the mappings of payload file to its checksum.
@@ -270,7 +271,7 @@ trait IBag {
    * @param pathInData  the path relative to the `bag/data` directory where the new file is being placed
    * @return this bag, with the added checksums of the new payload file
    */
-  def addPayloadFile(inputStream: InputStream)(pathInData: RelativePath): Try[IBag]
+  def addPayloadFile(inputStream: InputStream)(pathInData: RelativePath): Try[DansBag]
 
   /**
    * Add a payload file to the bag at the position indicated by the path relative to the `bag/data`
@@ -288,7 +289,7 @@ trait IBag {
    * @param pathInData the path relative to the `bag/data` directory where the new file is being placed
    * @return this bag, with the added checksums of the new payload file
    */
-  def addPayloadFile(src: File)(pathInData: RelativePath): Try[IBag]
+  def addPayloadFile(src: File)(pathInData: RelativePath): Try[DansBag]
 
   /**
    * Remove the payload file (relative to the `bag/data` directory) from the bag. This also removes
@@ -304,7 +305,7 @@ trait IBag {
    * @param pathInData the path to the file within `bag/data` that is being removed
    * @return this bag, without the payload manifest entries for the removed file
    */
-  def removePayloadFile(pathInData: RelativePath): Try[IBag]
+  def removePayloadFile(pathInData: RelativePath): Try[DansBag]
 
   /**
    * For each algorithm, list the mappings of tag file to its checksum.
@@ -328,7 +329,7 @@ trait IBag {
    * @param pathInBag   the path relative to the bag's base directory where the new file is being placed
    * @return this bag, with the added checksums of the new tag file
    */
-  def addTagFile(inputStream: InputStream)(pathInBag: RelativePath): Try[IBag]
+  def addTagFile(inputStream: InputStream)(pathInBag: RelativePath): Try[DansBag]
 
   /**
    * Add a tag file to the bag at the position indicated by the path relative to the bag's base
@@ -345,7 +346,7 @@ trait IBag {
    * @param pathInBag the path relative to the bag's base directory where the new file is being placed
    * @return this bag, with the added checksums of the new tag file
    */
-  def addTagFile(src: File)(pathInBag: RelativePath): Try[IBag]
+  def addTagFile(src: File)(pathInBag: RelativePath): Try[DansBag]
 
   /**
    * Remove the tag file (relative to the bag's base directory) from the bag. This also removes
@@ -361,7 +362,7 @@ trait IBag {
    * @param pathInBag the path to the file within the bag's base directory that is being removed
    * @return this bag, without the tag manifest entries for the removed file
    */
-  def removeTagFile(pathInBag: RelativePath): Try[IBag]
+  def removeTagFile(pathInBag: RelativePath): Try[DansBag]
 
   /**
    * Save all changes made to this bag (using the above methods) to the file system.
@@ -385,7 +386,7 @@ trait IBag {
   def save(): Try[Unit]
 }
 
-object IBag {
+object DansBag {
 
   /**
    * Create an empty bag at the given `baseDir`. Based on the given `algorithms`, (empty)
@@ -402,13 +403,13 @@ object IBag {
    * @param baseDir    The directory in which the bag is created
    * @param algorithms The algorithms with which the checksums for the (payload/tag) files are calculated
    * @param bagInfo    The entries to be added to `bag-info.txt`
-   * @return if successful, returns a `nl.knaw.dans.bag.IBag` object representing the bag located at `baseDir`
+   * @return if successful, returns a `nl.knaw.dans.bag.DansBag` object representing the bag located at `baseDir`
    *         else returns an exception
    */
   def empty(baseDir: File,
             algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
-            bagInfo: Map[String, Seq[String]] = Map.empty): Try[IBag] = {
-    v0.Bag.empty(baseDir, algorithms, bagInfo)
+            bagInfo: Map[String, Seq[String]] = Map.empty): Try[DansBag] = {
+    DansV0Bag.empty(baseDir, algorithms, bagInfo)
   }
 
   /**
@@ -429,30 +430,30 @@ object IBag {
    * @param payloadDir The directory containing the payload files and in which the bag is created
    * @param algorithms The algorithms with which the checksums for the (payload/tag) files are calculated
    * @param bagInfo    The entries to be added to `bag-info.txt`
-   * @return if successful, returns a `nl.knaw.dans.bag.IBag` object representing the bag located at `payloadDir`
+   * @return if successful, returns a `nl.knaw.dans.bag.DansBag` object representing the bag located at `payloadDir`
    *         else returns an exception
    */
   def createFromData(payloadDir: File,
                      algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
-                     bagInfo: Map[String, Seq[String]] = Map.empty): Try[IBag] = {
-    v0.Bag.createFromData(payloadDir, algorithms, bagInfo)
+                     bagInfo: Map[String, Seq[String]] = Map.empty): Try[DansBag] = {
+    DansV0Bag.createFromData(payloadDir, algorithms, bagInfo)
   }
 
   /**
-   * Reads a bag located at `baseDir` and return a `nl.knaw.dans.bag.IBag` when successful.
+   * Reads a bag located at `baseDir` and return a `nl.knaw.dans.bag.DansBag` when successful.
    *
    * @param baseDir The directory containing the bag
-   * @return if successful, returns a `nl.knaw.dans.bag.IBag` object representing the bag located at `baseDir`
+   * @return if successful, returns a `nl.knaw.dans.bag.DansBag` object representing the bag located at `baseDir`
    *         else return an exception
    */
-  def read(baseDir: File): Try[IBag] = v0.Bag.read(baseDir)
+  def read(baseDir: File): Try[DansBag] = DansV0Bag.read(baseDir)
 
   /**
-   * Implicit conversion from a `nl.knaw.dans.bag.IBag` to a `better.files.File`.
-   * The `File` pointed to will be the `nl.knaw.dans.bag.IBag#baseDir` of the `IBag`.
+   * Implicit conversion from a `nl.knaw.dans.bag.DansBag` to a `better.files.File`.
+   * The `File` pointed to will be the `nl.knaw.dans.bag.DansBag#baseDir` of the `DansBag`.
    *
-   * @param bag the `IBag` object representing the bag located at its `baseDir`
+   * @param bag the `DansBag` object representing the bag located at its `baseDir`
    * @return the `File` pointing to the bag's `baseDir`
    */
-  implicit def bagAsFile(bag: IBag): File = bag.baseDir
+  implicit def bagAsFile(bag: DansBag): File = bag.baseDir
 }

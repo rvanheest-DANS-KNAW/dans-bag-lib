@@ -1,7 +1,7 @@
 package nl.knaw.dans.bag.fixtures
 
 import better.files.File
-import nl.knaw.dans.bag.{ IBag, v0 }
+import nl.knaw.dans.bag.{ DansBag, v0 }
 
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success, Try }
@@ -27,17 +27,17 @@ trait TestBags extends FileSystemSupport {
       File(getClass.getResource(src)).copyTo(target)
   }
 
-  protected implicit def removeTryV0(bag: Try[IBag]): v0.Bag = bag match {
-    case Success(x: v0.Bag) => x
+  protected implicit def removeTryV0(bag: Try[DansBag]): v0.DansV0Bag = bag match {
+    case Success(x: v0.DansV0Bag) => x
     case Success(b) => fail(s"bag ${ b.baseDir.name } is not a v0 bag")
     case Failure(e) => throw e
   }
 
-  protected def fetchBagV0(): v0.Bag = IBag.read(fetchBagDirV0)
+  protected def fetchBagV0(): v0.DansV0Bag = DansBag.read(fetchBagDirV0)
 
-  protected def multipleKeysBagV0(): v0.Bag = IBag.read(multipleKeysBagDirV0)
+  protected def multipleKeysBagV0(): v0.DansV0Bag = DansBag.read(multipleKeysBagDirV0)
 
-  protected def multipleManifestsBagV0(): v0.Bag = IBag.read(multipleManifestsBagDirV0)
+  protected def multipleManifestsBagV0(): v0.DansV0Bag = DansBag.read(multipleManifestsBagDirV0)
 
-  protected def simpleBagV0(): v0.Bag = IBag.read(simpleBagDirV0)
+  protected def simpleBagV0(): v0.DansV0Bag = DansBag.read(simpleBagDirV0)
 }

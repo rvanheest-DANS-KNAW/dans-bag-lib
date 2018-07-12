@@ -2,13 +2,13 @@ package nl.knaw.dans.bag.v0
 
 import nl.knaw.dans.bag.fixtures.{ FileSystemSupport, TestBags, TestSupportFixture }
 
-class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBags {
+class DansV0BagUseCases extends TestSupportFixture with FileSystemSupport with TestBags {
 
   "bag" should "be able to create an empty bag with default algorithm and no bag-info" in {
     """
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.empty(simpleBagDirV0)
+      |val bag: Try[DansV0Bag] = DansV0Bag.empty(simpleBagDirV0)
     """.stripMargin should compile
   }
 
@@ -17,7 +17,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.empty(simpleBagDirV0, Set(ChecksumAlgorithm.MD5, ChecksumAlgorithm.SHA1))
+      |val bag: Try[DansV0Bag] = DansV0Bag.empty(simpleBagDirV0, Set(ChecksumAlgorithm.MD5, ChecksumAlgorithm.SHA1))
     """.stripMargin should compile
   }
 
@@ -25,7 +25,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.empty(simpleBagDirV0, bagInfo = Map("Some-Value" -> Seq("abcdef")))
+      |val bag: Try[DansV0Bag] = DansV0Bag.empty(simpleBagDirV0, bagInfo = Map("Some-Value" -> Seq("abcdef")))
     """.stripMargin should compile
   }
 
@@ -34,7 +34,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.empty(simpleBagDirV0, Set(ChecksumAlgorithm.SHA256), Map("Some-Value" -> Seq("abcdef")))
+      |val bag: Try[DansV0Bag] = DansV0Bag.empty(simpleBagDirV0, Set(ChecksumAlgorithm.SHA256), Map("Some-Value" -> Seq("abcdef")))
     """.stripMargin should compile
   }
 
@@ -42,7 +42,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.createFromData(simpleBagDirV0)
+      |val bag: Try[DansV0Bag] = DansV0Bag.createFromData(simpleBagDirV0)
     """.stripMargin should compile
   }
 
@@ -51,7 +51,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.createFromData(simpleBagDirV0, Set(ChecksumAlgorithm.MD5, ChecksumAlgorithm.SHA1))
+      |val bag: Try[DansV0Bag] = DansV0Bag.createFromData(simpleBagDirV0, Set(ChecksumAlgorithm.MD5, ChecksumAlgorithm.SHA1))
     """.stripMargin should compile
   }
 
@@ -59,7 +59,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.createFromData(simpleBagDirV0, bagInfo = Map("Some-Value" -> Seq("abcdef")))
+      |val bag: Try[DansV0Bag] = DansV0Bag.createFromData(simpleBagDirV0, bagInfo = Map("Some-Value" -> Seq("abcdef")))
     """.stripMargin should compile
   }
 
@@ -68,7 +68,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.createFromData(simpleBagDirV0, Set(ChecksumAlgorithm.SHA256), Map("Some-Value" -> Seq("abcdef")))
+      |val bag: Try[DansV0Bag] = DansV0Bag.createFromData(simpleBagDirV0, Set(ChecksumAlgorithm.SHA256), Map("Some-Value" -> Seq("abcdef")))
     """.stripMargin should compile
   }
 
@@ -76,7 +76,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
     """.stripMargin should compile
   }
 
@@ -85,7 +85,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import better.files.File
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |val baseDir: Try[File] = bag.map(_.baseDir)
     """.stripMargin should compile
   }
@@ -95,7 +95,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import better.files.File
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |val baseDir: Try[File] = bag.map(_.data)
     """.stripMargin should compile
   }
@@ -105,7 +105,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import gov.loc.repository.bagit.domain.Version
       |import scala.util.Try
       |
-      |val version: Try[Version] = Bag.read(simpleBagDirV0).map(_.bagitVersion)
+      |val version: Try[Version] = DansV0Bag.read(simpleBagDirV0).map(_.bagitVersion)
     """.stripMargin should compile
   }
 
@@ -114,7 +114,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import gov.loc.repository.bagit.domain.Version
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.withBagitVersion(new Version(0, 97)))
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.withBagitVersion(new Version(0, 97)))
     """.stripMargin should compile
   }
 
@@ -123,7 +123,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import gov.loc.repository.bagit.domain.Version
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.withBagitVersion(0, 97))
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.withBagitVersion(0, 97))
     """.stripMargin should compile
   }
 
@@ -132,7 +132,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import java.nio.charset.Charset
       |import scala.util.Try
       |
-      |val version: Try[Charset] = Bag.read(simpleBagDirV0).map(_.fileEncoding)
+      |val version: Try[Charset] = DansV0Bag.read(simpleBagDirV0).map(_.fileEncoding)
     """.stripMargin should compile
   }
 
@@ -141,7 +141,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import java.nio.charset.StandardCharsets
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.withFileEncoding(StandardCharsets.UTF_8))
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.withFileEncoding(StandardCharsets.UTF_8))
     """.stripMargin should compile
   }
 
@@ -149,7 +149,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val bagInfo: Try[Map[String, Seq[String]]] = Bag.read(simpleBagDirV0).map(_.bagInfo)
+      |val bagInfo: Try[Map[String, Seq[String]]] = DansV0Bag.read(simpleBagDirV0).map(_.bagInfo)
     """.stripMargin should compile
   }
 
@@ -157,7 +157,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.addBagInfo("some-key", "some-value"))
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.addBagInfo("some-key", "some-value"))
     """.stripMargin should compile
   }
 
@@ -165,7 +165,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.removeBagInfo("some-key"))
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.removeBagInfo("some-key"))
     """.stripMargin should compile
   }
 
@@ -174,7 +174,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |import org.joda.time.DateTime
       |
-      |val bag: Try[Option[DateTime]] = Bag.read(simpleBagDirV0).flatMap(_.created)
+      |val bag: Try[Option[DateTime]] = DansV0Bag.read(simpleBagDirV0).flatMap(_.created)
     """.stripMargin should compile
   }
 
@@ -183,7 +183,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |import org.joda.time.DateTime
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.withCreated())
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.withCreated())
     """.stripMargin should compile
   }
 
@@ -192,7 +192,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |import org.joda.time.DateTime
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.withCreated(DateTime.now()))
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.withCreated(DateTime.now()))
     """.stripMargin should compile
   }
 
@@ -201,7 +201,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |import org.joda.time.DateTime
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.withoutCreated())
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.withoutCreated())
     """.stripMargin should compile
   }
 
@@ -210,7 +210,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |import java.net.URI
       |
-      |val bag: Try[Option[URI]] = Bag.read(simpleBagDirV0).flatMap(_.isVersionOf)
+      |val bag: Try[Option[URI]] = DansV0Bag.read(simpleBagDirV0).flatMap(_.isVersionOf)
     """.stripMargin should compile
   }
 
@@ -219,7 +219,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |import java.util.UUID
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.withIsVersionOf(UUID.randomUUID()))
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.withIsVersionOf(UUID.randomUUID()))
     """.stripMargin should compile
   }
 
@@ -228,7 +228,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |import org.joda.time.DateTime
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0).map(_.withoutIsVersionOf())
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0).map(_.withoutIsVersionOf())
     """.stripMargin should compile
   }
 
@@ -237,7 +237,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.FetchItem
       |import scala.util.Try
       |
-      |val fetchItems: Try[Seq[FetchItem]] = Bag.read(simpleBagDirV0).map(_.fetchFiles)
+      |val fetchItems: Try[Seq[FetchItem]] = DansV0Bag.read(simpleBagDirV0).map(_.fetchFiles)
     """.stripMargin should compile
   }
 
@@ -247,7 +247,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.FetchItem
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .flatMap(bag => bag.addFetchFile(new URL("http://x"), 12L, _ / "fetched-file.txt"))
     """.stripMargin should compile
   }
@@ -257,7 +257,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.FetchItem
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .flatMap(bag => bag.removeFetchByFile(_ / "fetched-file.txt"))
     """.stripMargin should compile
   }
@@ -268,7 +268,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.FetchItem
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .flatMap(bag => bag.removeFetchByURL(new URL("http://x")))
     """.stripMargin should compile
   }
@@ -279,7 +279,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.FetchItem
       |import scala.util.Try
       |
-      |val bag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val bag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .map(bag => bag.removeFetch(FetchItem(new URL("http://x"), 12L, bag.data / "fetched-file.txt")))
     """.stripMargin should compile
   }
@@ -289,7 +289,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val algorithms: Try[Set[ChecksumAlgorithm]] = Bag.read(simpleBagDirV0)
+      |val algorithms: Try[Set[ChecksumAlgorithm]] = DansV0Bag.read(simpleBagDirV0)
       |    .map(_.payloadManifestAlgorithms)
     """.stripMargin should compile
   }
@@ -300,7 +300,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val manifests: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val manifests: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .flatMap(bag => bag.addPayloadManifestAlgorithm(ChecksumAlgorithm.SHA512))
     """.stripMargin should compile
   }
@@ -311,7 +311,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val manifests: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val manifests: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .flatMap(bag => bag.addPayloadManifestAlgorithm(ChecksumAlgorithm.SHA512, updateManifest = true))
     """.stripMargin should compile
   }
@@ -322,7 +322,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val manifests: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val manifests: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .flatMap(bag => bag.removePayloadManifestAlgorithm(ChecksumAlgorithm.SHA1))
     """.stripMargin should compile
   }
@@ -332,7 +332,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val algorithms: Try[Set[ChecksumAlgorithm]] = Bag.read(simpleBagDirV0)
+      |val algorithms: Try[Set[ChecksumAlgorithm]] = DansV0Bag.read(simpleBagDirV0)
       |    .map(_.tagManifestAlgorithms)
     """.stripMargin should compile
   }
@@ -343,7 +343,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val manifests: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val manifests: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .flatMap(bag => bag.addTagManifestAlgorithm(ChecksumAlgorithm.SHA512))
     """.stripMargin should compile
   }
@@ -354,7 +354,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val manifests: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val manifests: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .flatMap(bag => bag.addTagManifestAlgorithm(ChecksumAlgorithm.SHA512, updateManifest = true))
     """.stripMargin should compile
   }
@@ -366,7 +366,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
       |import scala.util.Try
       |
-      |val manifests: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val manifests: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |    .flatMap(bag => bag.removeTagManifestAlgorithm(ChecksumAlgorithm.SHA512))
     """.stripMargin should compile
   }
@@ -378,7 +378,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import better.files.File
       |import scala.util.Try
       |
-      |val manifests: Try[Map[ChecksumAlgorithm, Map[File, String]]] = Bag.read(simpleBagDirV0)
+      |val manifests: Try[Map[ChecksumAlgorithm, Map[File, String]]] = DansV0Bag.read(simpleBagDirV0)
       |    .map(_.payloadManifests)
     """.stripMargin should compile
   }
@@ -389,7 +389,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |
       |val inputStream: InputStream = ???
-      |val resultBag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val resultBag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |  .flatMap(_.addPayloadFile(inputStream)(_ / "test.txt"))
     """.stripMargin should compile
   }
@@ -400,7 +400,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |
       |val input: File = ???
-      |val resultBag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val resultBag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |  .flatMap(_.addPayloadFile(input)(_ / "test.txt"))
     """.stripMargin should compile
   }
@@ -409,7 +409,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val resultBag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val resultBag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |  .flatMap(_.removePayloadFile(_ / "test.txt"))
     """.stripMargin should compile
   }
@@ -421,7 +421,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import better.files.File
       |import scala.util.Try
       |
-      |val manifests: Try[Map[ChecksumAlgorithm, Map[File, String]]] = Bag.read(simpleBagDirV0)
+      |val manifests: Try[Map[ChecksumAlgorithm, Map[File, String]]] = DansV0Bag.read(simpleBagDirV0)
       |    .map(_.tagManifests)
     """.stripMargin should compile
   }
@@ -432,7 +432,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |
       |val inputStream: InputStream = ???
-      |val resultBag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val resultBag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |  .flatMap(_.addTagFile(inputStream)(_ / "test.txt"))
     """.stripMargin should compile
   }
@@ -443,7 +443,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
       |import scala.util.Try
       |
       |val input: File = ???
-      |val resultBag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val resultBag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |  .flatMap(_.addTagFile(input)(_ / "test.txt"))
     """.stripMargin should compile
   }
@@ -452,7 +452,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val resultBag: Try[Bag] = Bag.read(simpleBagDirV0)
+      |val resultBag: Try[DansV0Bag] = DansV0Bag.read(simpleBagDirV0)
       |  .flatMap(_.removeTagFile(_ / "test.txt"))
     """.stripMargin should compile
   }
@@ -461,7 +461,7 @@ class BagUseCases extends TestSupportFixture with FileSystemSupport with TestBag
     """
       |import scala.util.Try
       |
-      |val saved: Try[Unit] = Bag.read(simpleBagDirV0)
+      |val saved: Try[Unit] = DansV0Bag.read(simpleBagDirV0)
       |    // .flatMap(_.some_modifications)
       |    .flatMap(_.save)
     """.stripMargin should compile

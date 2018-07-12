@@ -13,7 +13,7 @@ import gov.loc.repository.bagit.reader.BagReader
 import gov.loc.repository.bagit.util.PathUtils
 import gov.loc.repository.bagit.writer.{ BagitFileWriter, FetchWriter, ManifestWriter, MetadataWriter }
 import nl.knaw.dans.bag.ChecksumAlgorithm.{ ChecksumAlgorithm, locDeconverter }
-import nl.knaw.dans.bag.{ ChecksumAlgorithm, FetchItem, IBag, RelativePath, betterFileToPath }
+import nl.knaw.dans.bag.{ ChecksumAlgorithm, FetchItem, DansBag, RelativePath, betterFileToPath }
 import org.joda.time.DateTime
 import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
 
@@ -23,7 +23,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success, Try }
 
-class Bag private(private[v0] val locBag: LocBag) extends IBag {
+class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
 
   /**
    * @inheritdoc
@@ -58,7 +58,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def withBagitVersion(version: Version): Bag = {
+  override def withBagitVersion(version: Version): DansV0Bag = {
     // TODO what happens when the version changes? Should we change the layout of the bag?
     locBag.setVersion(version)
     this
@@ -67,7 +67,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def withBagitVersion(major: Int, minor: Int): Bag = {
+  override def withBagitVersion(major: Int, minor: Int): DansV0Bag = {
     withBagitVersion(new Version(major, minor))
   }
 
@@ -79,7 +79,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def withFileEncoding(charset: Charset): Bag = {
+  override def withFileEncoding(charset: Charset): DansV0Bag = {
     locBag.setFileEncoding(charset)
     this
   }
@@ -96,7 +96,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def addBagInfo(key: String, value: String): Bag = {
+  override def addBagInfo(key: String, value: String): DansV0Bag = {
     locBag.getMetadata.add(key, value)
 
     this
@@ -105,7 +105,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def removeBagInfo(key: String): Bag = {
+  override def removeBagInfo(key: String): DansV0Bag = {
     locBag.getMetadata.remove(key)
 
     this
@@ -115,18 +115,18 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
    * @inheritdoc
    */
   override def created: Try[Option[DateTime]] = Try {
-    Option(locBag.getMetadata.get(Bag.CREATED_KEY))
+    Option(locBag.getMetadata.get(DansV0Bag.CREATED_KEY))
       .flatMap(_.asScala.headOption)
-      .map(DateTime.parse(_, Bag.dateTimeFormatter))
+      .map(DateTime.parse(_, DansV0Bag.dateTimeFormatter))
   }
 
   /**
    * @inheritdoc
    */
   // TODO when should this be called? On creating new bag? On save (probably not)?
-  override def withCreated(created: DateTime = DateTime.now()): Bag = {
+  override def withCreated(created: DateTime = DateTime.now()): DansV0Bag = {
     withoutCreated()
-      .locBag.getMetadata.add(Bag.CREATED_KEY, created.toString(Bag.dateTimeFormatter))
+      .locBag.getMetadata.add(DansV0Bag.CREATED_KEY, created.toString(DansV0Bag.dateTimeFormatter))
 
     this
   }
@@ -134,15 +134,15 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def withoutCreated(): Bag = {
-    removeBagInfo(Bag.CREATED_KEY)
+  override def withoutCreated(): DansV0Bag = {
+    removeBagInfo(DansV0Bag.CREATED_KEY)
   }
 
   /**
    * @inheritdoc
    */
   override def isVersionOf: Try[Option[URI]] = {
-    Option(locBag.getMetadata.get(Bag.IS_VERSION_OF_KEY))
+    Option(locBag.getMetadata.get(DansV0Bag.IS_VERSION_OF_KEY))
       .flatMap(_.asScala.headOption)
       .map {
         case s if s matches "urn:uuid:[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}" =>
@@ -156,10 +156,10 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def withIsVersionOf(uuid: UUID): Bag = {
+  override def withIsVersionOf(uuid: UUID): DansV0Bag = {
     val uri = new URI(s"urn:uuid:$uuid")
     withoutIsVersionOf()
-      .locBag.getMetadata.add(Bag.IS_VERSION_OF_KEY, uri.toString)
+      .locBag.getMetadata.add(DansV0Bag.IS_VERSION_OF_KEY, uri.toString)
 
     this
   }
@@ -167,8 +167,8 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def withoutIsVersionOf(): Bag = {
-    removeBagInfo(Bag.IS_VERSION_OF_KEY)
+  override def withoutIsVersionOf(): DansV0Bag = {
+    removeBagInfo(DansV0Bag.IS_VERSION_OF_KEY)
   }
 
   /**
@@ -180,7 +180,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def addFetchFile(url: URL, length: Long, pathInData: RelativePath): Try[Bag] = Try {
+  override def addFetchFile(url: URL, length: Long, pathInData: RelativePath): Try[DansV0Bag] = Try {
     val destinationPath = pathInData(data)
 
     if (destinationPath.exists)
@@ -216,7 +216,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def removeFetchByFile(pathInData: RelativePath): Try[Bag] = Try {
+  override def removeFetchByFile(pathInData: RelativePath): Try[DansV0Bag] = Try {
     val destinationPath = pathInData(data)
 
     fetchFiles.find(_.file == destinationPath)
@@ -227,7 +227,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def removeFetchByURL(url: URL): Try[Bag] = Try {
+  override def removeFetchByURL(url: URL): Try[DansV0Bag] = Try {
     fetchFiles.find(_.url == url)
       .map(removeFetch)
       .getOrElse { throw new IllegalArgumentException(s"no such URL: $url") }
@@ -236,7 +236,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def removeFetch(item: FetchItem): Bag = {
+  override def removeFetch(item: FetchItem): DansV0Bag = {
     if (locBag.getItemsToFetch.remove(FetchItem.locDeconverter(item)))
       removeFileFromManifests(item.file, locBag.getPayLoadManifests, locBag.setPayLoadManifests)
 
@@ -259,7 +259,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
    * @inheritdoc
    */
   override def addPayloadManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm,
-                                           updateManifest: Boolean = false): Try[Bag] = Try {
+                                           updateManifest: Boolean = false): Try[DansV0Bag] = Try {
     addAlgorithm(checksumAlgorithm, updateManifest, includeFetchFiles = true)(
       locBag.getPayLoadManifests, data.listRecursively.filter(_.isRegularFile), fetchFiles)
 
@@ -274,7 +274,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def removePayloadManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm): Try[Bag] = Try {
+  override def removePayloadManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm): Try[DansV0Bag] = Try {
     removeAlgorithm(checksumAlgorithm)(locBag.getPayLoadManifests, locBag.setPayLoadManifests)
 
     val manifestPath = baseDir / s"manifest-${ checksumAlgorithm.getBagitName }.txt"
@@ -294,7 +294,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
    * @inheritdoc
    */
   override def addTagManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm,
-                                       updateManifest: Boolean = false): Try[Bag] = Try {
+                                       updateManifest: Boolean = false): Try[DansV0Bag] = Try {
     addAlgorithm(checksumAlgorithm, updateManifest)(locBag.getTagManifests,
       baseDir.listRecursively
         .filter(_.isRegularFile)
@@ -307,7 +307,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def removeTagManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm): Try[Bag] = Try {
+  override def removeTagManifestAlgorithm(checksumAlgorithm: ChecksumAlgorithm): Try[DansV0Bag] = Try {
     removeAlgorithm(checksumAlgorithm)(locBag.getTagManifests, locBag.setTagManifests)
 
     this
@@ -321,7 +321,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def addPayloadFile(inputStream: InputStream)(pathInData: RelativePath): Try[Bag] = Try {
+  override def addPayloadFile(inputStream: InputStream)(pathInData: RelativePath): Try[DansV0Bag] = Try {
     val file = pathInData(data)
 
     if (file.exists)
@@ -341,7 +341,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def addPayloadFile(src: File)(pathInData: RelativePath): Try[Bag] = Try {
+  override def addPayloadFile(src: File)(pathInData: RelativePath): Try[DansV0Bag] = Try {
     addFile(src, pathInData)(_.addPayloadFile)
 
     this
@@ -350,7 +350,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def removePayloadFile(pathInData: RelativePath): Try[Bag] = Try {
+  override def removePayloadFile(pathInData: RelativePath): Try[DansV0Bag] = Try {
     val file = pathInData(data)
 
     if (file.notExists)
@@ -373,7 +373,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def addTagFile(inputStream: InputStream)(pathInBag: RelativePath): Try[Bag] = Try {
+  override def addTagFile(inputStream: InputStream)(pathInBag: RelativePath): Try[DansV0Bag] = Try {
     val file = pathInBag(baseDir)
 
     if (file.exists)
@@ -415,7 +415,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def addTagFile(src: File)(pathInBag: RelativePath): Try[Bag] = Try {
+  override def addTagFile(src: File)(pathInBag: RelativePath): Try[DansV0Bag] = Try {
     addFile(src, pathInBag)(_.addTagFile)
 
     this
@@ -424,7 +424,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   /**
    * @inheritdoc
    */
-  override def removeTagFile(pathInBag: RelativePath): Try[Bag] = Try {
+  override def removeTagFile(pathInBag: RelativePath): Try[DansV0Bag] = Try {
     val file = pathInBag(baseDir)
 
     if (file.notExists)
@@ -595,15 +595,15 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   }
 
   private def addFile(src: File, pathInBag: RelativePath)
-                     (addFileAsStream: Bag => InputStream => RelativePath => Try[Bag]): Unit = {
+                     (addFileAsStream: DansV0Bag => InputStream => RelativePath => Try[DansV0Bag]): Unit = {
 
     def calculatePathInBagToFile(file: File)(pathInBagToFile: RelativePath): RelativePath = {
       pathInBagToFile(_) / file.name
     }
 
     @tailrec
-    def recursion(bag: Bag, currentFile: File, pathInBagToFile: RelativePath)
-                 (implicit backlog: mutable.Queue[(File, RelativePath)]): Bag = {
+    def recursion(bag: DansV0Bag, currentFile: File, pathInBagToFile: RelativePath)
+                 (implicit backlog: mutable.Queue[(File, RelativePath)]): DansV0Bag = {
       if (currentFile.isDirectory) {
         val subFiles = currentFile.list
           .map(file => file -> calculatePathInBagToFile(file)(pathInBagToFile))
@@ -663,7 +663,7 @@ class Bag private(private[v0] val locBag: LocBag) extends IBag {
   }
 }
 
-object Bag {
+object DansV0Bag {
   private val bagReader = new BagReader()
 
   val CREATED_KEY = "Created"
@@ -690,7 +690,7 @@ object Bag {
    */
   def empty(baseDir: File,
             algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
-            bagInfo: Map[String, Seq[String]] = Map.empty): Try[Bag] = {
+            bagInfo: Map[String, Seq[String]] = Map.empty): Try[DansV0Bag] = {
     if (baseDir.exists)
       Failure(new FileAlreadyExistsException(baseDir.toString))
     else
@@ -720,7 +720,7 @@ object Bag {
    */
   def createFromData(payloadDir: File,
                      algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
-                     bagInfo: Map[String, Seq[String]] = Map.empty): Try[Bag] = {
+                     bagInfo: Map[String, Seq[String]] = Map.empty): Try[DansV0Bag] = {
     if (payloadDir.notExists)
       Failure(new NoSuchFileException(payloadDir.toString))
     else
@@ -729,7 +729,7 @@ object Bag {
 
   private def bagInPlace(base: File,
                          algorithms: Set[ChecksumAlgorithm],
-                         bagInfo: Map[String, Seq[String]]): Try[Bag] = Try {
+                         bagInfo: Map[String, Seq[String]]): Try[DansV0Bag] = Try {
     require(algorithms.nonEmpty, "At least one algorithm should be provided")
 
     val algos = algorithms.map(locDeconverter).asJava
@@ -739,7 +739,7 @@ object Bag {
         add(key, value)
       }
     }
-    new Bag(BagCreator.bagInPlace(base, algos, true, metadata))
+    new DansV0Bag(BagCreator.bagInPlace(base, algos, true, metadata))
   }
 
   /**
@@ -749,7 +749,7 @@ object Bag {
    * @return if successful, returns a `nl.knaw.dans.bag.v0.Bag` object representing the bag located at `baseDir`
    *         else return an exception
    */
-  def read(baseDir: File): Try[Bag] = Try {
-    new Bag(bagReader.read(baseDir))
+  def read(baseDir: File): Try[DansV0Bag] = Try {
+    new DansV0Bag(bagReader.read(baseDir))
   }
 }

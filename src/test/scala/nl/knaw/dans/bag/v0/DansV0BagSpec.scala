@@ -11,7 +11,7 @@ import gov.loc.repository.bagit.conformance.{ BagLinter, BagitWarning }
 import gov.loc.repository.bagit.domain.Version
 import gov.loc.repository.bagit.verify.BagVerifier
 import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
-import nl.knaw.dans.bag.IBag.bagAsFile
+import nl.knaw.dans.bag.DansBag.bagAsFile
 import nl.knaw.dans.bag._
 import nl.knaw.dans.bag.fixtures._
 import org.joda.time.format.ISODateTimeFormat
@@ -21,7 +21,7 @@ import scala.collection.JavaConverters._
 import scala.language.{ existentials, implicitConversions, postfixOps }
 import scala.util.{ Failure, Success, Try }
 
-class BagSpec extends TestSupportFixture
+class DansV0BagSpec extends TestSupportFixture
   with FileSystemSupport
   with TestBags
   with BagMatchers
@@ -38,7 +38,7 @@ class BagSpec extends TestSupportFixture
 
     baseDir.toJava shouldNot exist
 
-    Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     baseDir.toJava should exist
     (baseDir / 'data).toJava should exist
@@ -54,7 +54,7 @@ class BagSpec extends TestSupportFixture
 
     baseDir.toJava shouldNot exist
 
-    Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     baseDir.toJava should exist
   }
@@ -64,7 +64,7 @@ class BagSpec extends TestSupportFixture
     val baseDir = testDir / "emptyTestBag"
     val algorithms = Set(ChecksumAlgorithm.SHA1)
 
-    Bag.empty(baseDir, algorithms) shouldBe a[Success[_]]
+    DansV0Bag.empty(baseDir, algorithms) shouldBe a[Success[_]]
 
     (baseDir / "bag-info.txt").toJava should exist
 
@@ -82,7 +82,7 @@ class BagSpec extends TestSupportFixture
       "Is-Version-Of" -> Seq(isVersionOf)
     )
 
-    Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     (baseDir / "bag-info.txt").toJava should exist
 
@@ -102,7 +102,7 @@ class BagSpec extends TestSupportFixture
       "Is-Version-Of" -> Seq(isVersionOf1, isVersionOf2)
     )
 
-    Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     (baseDir / "bag-info.txt").toJava should exist
 
@@ -120,7 +120,7 @@ class BagSpec extends TestSupportFixture
       "Is-Version-Of" -> Seq(s"urn:uuid:${ UUID.randomUUID() }")
     )
 
-    Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     baseDir.glob("manifest-*.txt").map(_.name).toList should contain only(
       "manifest-sha1.txt",
@@ -140,7 +140,7 @@ class BagSpec extends TestSupportFixture
       "Is-Version-Of" -> Seq(s"urn:uuid:${ UUID.randomUUID() }")
     )
 
-    Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     baseDir.glob("tagmanifest-*.txt").map(_.name).toList should contain only(
       "tagmanifest-sha1.txt",
@@ -164,7 +164,7 @@ class BagSpec extends TestSupportFixture
 
     val algorithms = Set(ChecksumAlgorithm.SHA1, ChecksumAlgorithm.SHA512)
 
-    Bag.empty(baseDir, algorithms) should matchPattern {
+    DansV0Bag.empty(baseDir, algorithms) should matchPattern {
       case Failure(e: FileAlreadyExistsException) if e.getMessage == baseDir.toString =>
     }
   }
@@ -173,7 +173,7 @@ class BagSpec extends TestSupportFixture
     val baseDir = testDir / "emptyTestBag"
     val algorithms = Set.empty[ChecksumAlgorithm]
 
-    Bag.empty(baseDir, algorithms) should matchPattern {
+    DansV0Bag.empty(baseDir, algorithms) should matchPattern {
       case Failure(_: IllegalArgumentException) =>
     }
   }
@@ -197,7 +197,7 @@ class BagSpec extends TestSupportFixture
     baseDir.toJava should exist
     baseDir.listRecursively.filter(_.isRegularFile).toList should contain only(file1, file2)
 
-    Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     val file1Data = baseDir / 'data / baseDir.relativize(file1).toString
     val file2Data = baseDir / 'data / baseDir.relativize(file2).toString
@@ -218,7 +218,7 @@ class BagSpec extends TestSupportFixture
     val (baseDir, _, _) = createDataDir()
     val algorithms = Set(ChecksumAlgorithm.SHA1)
 
-    Bag.createFromData(baseDir, algorithms) shouldBe a[Success[_]]
+    DansV0Bag.createFromData(baseDir, algorithms) shouldBe a[Success[_]]
 
     (baseDir / "bag-info.txt").toJava should exist
 
@@ -236,7 +236,7 @@ class BagSpec extends TestSupportFixture
       "Is-Version-Of" -> Seq(isVersionOf)
     )
 
-    Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     (baseDir / "bag-info.txt").toJava should exist
 
@@ -256,7 +256,7 @@ class BagSpec extends TestSupportFixture
       "Is-Version-Of" -> Seq(isVersionOf1, isVersionOf2)
     )
 
-    Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     (baseDir / "bag-info.txt").toJava should exist
 
@@ -275,7 +275,7 @@ class BagSpec extends TestSupportFixture
       "Is-Version-Of" -> Seq(s"urn:uuid:${ UUID.randomUUID() }")
     )
 
-    Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     baseDir.glob("manifest-*.txt").map(_.name).toList should contain only(
       "manifest-sha1.txt",
@@ -298,7 +298,7 @@ class BagSpec extends TestSupportFixture
       "Is-Version-Of" -> Seq(s"urn:uuid:${ UUID.randomUUID() }")
     )
 
-    Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
+    DansV0Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
     baseDir.glob("tagmanifest-*.txt").map(_.name).toList should contain only(
       "tagmanifest-sha1.txt",
@@ -322,7 +322,7 @@ class BagSpec extends TestSupportFixture
       "Is-Version-Of" -> Seq(s"urn:uuid:${ UUID.randomUUID() }")
     )
 
-    Bag.createFromData(baseDir, algorithms, bagInfo) should matchPattern {
+    DansV0Bag.createFromData(baseDir, algorithms, bagInfo) should matchPattern {
       case Failure(e: NoSuchFileException) if baseDir.toString == e.getMessage =>
     }
   }
@@ -331,24 +331,24 @@ class BagSpec extends TestSupportFixture
     val (baseDir, _, _) = createDataDir()
     val algorithms = Set.empty[ChecksumAlgorithm]
 
-    Bag.createFromData(baseDir, algorithms) should matchPattern {
+    DansV0Bag.createFromData(baseDir, algorithms) should matchPattern {
       case Failure(_: IllegalArgumentException) =>
     }
   }
 
   "read bag" should "load a bag located in the given directory into the object structure for a Bag" in {
-    Bag.read(simpleBagDirV0) should matchPattern { case Success(_: Bag) => }
+    DansV0Bag.read(simpleBagDirV0) should matchPattern { case Success(_: DansV0Bag) => }
   }
 
   it should "fail when the directory does not exist" in {
-    Bag.read(testDir / 'non / 'existing / 'directory) should matchPattern {
+    DansV0Bag.read(testDir / 'non / 'existing / 'directory) should matchPattern {
       case Failure(_: NoSuchFileException) =>
     }
   }
 
   it should "fail when the directory does not represent a valid bag" in {
     val (baseDir, _, _) = createDataDir()
-    Bag.read(baseDir) should matchPattern {
+    DansV0Bag.read(baseDir) should matchPattern {
       case Failure(e: NoSuchFileException) if e.getMessage == (baseDir / "bagit.txt").toString =>
     }
   }
@@ -473,15 +473,15 @@ class BagSpec extends TestSupportFixture
 
   it should "return None if the key 'Created' is not present" in {
     val bag = simpleBagV0()
-    bag.locBag.getMetadata.remove(Bag.CREATED_KEY)
+    bag.locBag.getMetadata.remove(DansV0Bag.CREATED_KEY)
 
     bag.created should matchPattern { case Success(None) => }
   }
 
   it should "fail when the key 'Created' contains something that is not a date/time" in {
     val bag = simpleBagV0()
-    bag.locBag.getMetadata.remove(Bag.CREATED_KEY)
-    bag.locBag.getMetadata.add(Bag.CREATED_KEY, "not-a-date")
+    bag.locBag.getMetadata.remove(DansV0Bag.CREATED_KEY)
+    bag.locBag.getMetadata.add(DansV0Bag.CREATED_KEY, "not-a-date")
 
     bag.created should matchPattern {
       case Failure(e: IllegalArgumentException) if e.getMessage == "Invalid format: \"not-a-date\"" =>
@@ -490,7 +490,7 @@ class BagSpec extends TestSupportFixture
 
   "withCreated" should "set the 'Created' key in the bag" in {
     val bag = simpleBagV0()
-    bag.locBag.getMetadata.remove(Bag.CREATED_KEY)
+    bag.locBag.getMetadata.remove(DansV0Bag.CREATED_KEY)
 
     val expected = new DateTime(2017, 1, 16, 14, 35, 0, 888, DateTimeZone.forOffsetHoursMinutes(1, 0))
     val resultBag = bag.withCreated(expected)
@@ -506,7 +506,7 @@ class BagSpec extends TestSupportFixture
     val expected = new DateTime(2017, 1, 16, 14, 35, 0, 888, DateTimeZone.forOffsetHoursMinutes(1, 0))
     val resultBag = bag.withCreated(expected)
 
-    resultBag.locBag.getMetadata.get(Bag.CREATED_KEY).size() shouldBe 1
+    resultBag.locBag.getMetadata.get(DansV0Bag.CREATED_KEY).size() shouldBe 1
 
     inside(resultBag.created) {
       case Success(Some(dateTime)) => dateTime.getMillis shouldBe expected.getMillis
@@ -516,20 +516,20 @@ class BagSpec extends TestSupportFixture
   "withoutCreated" should "remove the 'Created' key from the bag-info" in {
     val bag = simpleBagV0()
 
-    bag.bagInfo should contain key Bag.CREATED_KEY
+    bag.bagInfo should contain key DansV0Bag.CREATED_KEY
 
     val resultBag = bag.withoutCreated()
-    resultBag.bagInfo shouldNot contain key Bag.CREATED_KEY
+    resultBag.bagInfo shouldNot contain key DansV0Bag.CREATED_KEY
   }
 
   it should "not fail when the 'Created' key was not present in the bag-info" in {
     val bag = simpleBagV0()
 
     val resultBag = bag.withoutCreated()
-    resultBag.bagInfo shouldNot contain key Bag.CREATED_KEY
+    resultBag.bagInfo shouldNot contain key DansV0Bag.CREATED_KEY
 
     val resultBag2 = resultBag.withoutCreated()
-    resultBag2.bagInfo shouldNot contain key Bag.CREATED_KEY
+    resultBag2.bagInfo shouldNot contain key DansV0Bag.CREATED_KEY
   }
 
   "isVersionOf" should "return the urn:uuid of the 'Is-Version-Of' key in the bag-info" in {
@@ -547,7 +547,7 @@ class BagSpec extends TestSupportFixture
 
   it should "fail when the 'Is-Version-Of' key contains something else than a URI" in {
     val bag = simpleBagV0()
-    bag.locBag.getMetadata.add(Bag.IS_VERSION_OF_KEY, "not-a-uri")
+    bag.locBag.getMetadata.add(DansV0Bag.IS_VERSION_OF_KEY, "not-a-uri")
 
     bag.isVersionOf should matchPattern {
       case Failure(e: IllegalArgumentException) if e.getMessage == "Invalid format: \"not-a-uri\"" =>
@@ -571,7 +571,7 @@ class BagSpec extends TestSupportFixture
     val expected = new URI(s"urn:uuid:$uuid")
     val resultBag = bag.withIsVersionOf(uuid)
 
-    resultBag.locBag.getMetadata.get(Bag.IS_VERSION_OF_KEY).size() shouldBe 1
+    resultBag.locBag.getMetadata.get(DansV0Bag.IS_VERSION_OF_KEY).size() shouldBe 1
 
     resultBag.isVersionOf should matchPattern { case Success(Some(`expected`)) => }
   }
@@ -579,22 +579,22 @@ class BagSpec extends TestSupportFixture
   "withoutIsVersionOf" should "remove the 'Is-Version-Of' key from the bag-info" in {
     val bag = fetchBagV0()
 
-    bag.bagInfo should contain key Bag.IS_VERSION_OF_KEY
+    bag.bagInfo should contain key DansV0Bag.IS_VERSION_OF_KEY
 
     val resultBag = bag.withoutIsVersionOf()
-    resultBag.bagInfo shouldNot contain key Bag.IS_VERSION_OF_KEY
+    resultBag.bagInfo shouldNot contain key DansV0Bag.IS_VERSION_OF_KEY
   }
 
   it should "not fail when the 'Is-Version-Of' key was not present in the bag-info" in {
     val bag = fetchBagV0()
 
-    bag.bagInfo should contain key Bag.IS_VERSION_OF_KEY
+    bag.bagInfo should contain key DansV0Bag.IS_VERSION_OF_KEY
 
     val resultBag = bag.withoutIsVersionOf()
-    resultBag.bagInfo shouldNot contain key Bag.IS_VERSION_OF_KEY
+    resultBag.bagInfo shouldNot contain key DansV0Bag.IS_VERSION_OF_KEY
 
     val resultBag2 = bag.withoutIsVersionOf()
-    resultBag2.bagInfo shouldNot contain key Bag.IS_VERSION_OF_KEY
+    resultBag2.bagInfo shouldNot contain key DansV0Bag.IS_VERSION_OF_KEY
   }
 
   "fetchFiles" should "list all entries in the fetch.txt files" in {
@@ -1250,7 +1250,7 @@ class BagSpec extends TestSupportFixture
     })
   }
 
-  def addPayloadFile(addPayloadFile: Bag => File => RelativePath => Try[Bag]): Unit = {
+  def addPayloadFile(addPayloadFile: DansV0Bag => File => RelativePath => Try[DansV0Bag]): Unit = {
     it should "copy the new file into the bag" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
@@ -1561,7 +1561,7 @@ class BagSpec extends TestSupportFixture
     })
   }
 
-  def addTagFile(addTagFile: Bag => File => RelativePath => Try[Bag]): Unit = {
+  def addTagFile(addTagFile: DansV0Bag => File => RelativePath => Try[DansV0Bag]): Unit = {
     it should "copy the new file into the bag" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)

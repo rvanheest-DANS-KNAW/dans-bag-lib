@@ -15,7 +15,7 @@ import scala.language.{ implicitConversions, postfixOps }
 import scala.util.{ Failure, Success, Try }
 
 class Deposit private(val baseDir: File,
-                      val bag: IBag,
+                      val bag: DansBag,
                       private val properties: DepositProperties) {
 
   override def equals(obj: Any): Boolean = {
@@ -346,7 +346,7 @@ object Deposit {
       Failure(new FileAlreadyExistsException(baseDir.toString))
     else
       for {
-        bag <- IBag.empty(baseDir / bagStore.bagId.toString, algorithms, bagInfo)
+        bag <- DansBag.empty(baseDir / bagStore.bagId.toString, algorithms, bagInfo)
         properties = DepositProperties.empty(state, depositor, bagStore)
         _ <- properties.save(depositProperties(baseDir))
       } yield new Deposit(baseDir, bag, properties)
@@ -363,7 +363,7 @@ object Deposit {
     else {
       for {
         bagDir <- moveBag(payloadDir, bagStore.bagId)
-        bag <- IBag.createFromData(bagDir, algorithms, bagInfo)
+        bag <- DansBag.createFromData(bagDir, algorithms, bagInfo)
         properties = DepositProperties.empty(state, depositor, bagStore)
         _ <- properties.save(depositProperties(payloadDir))
       } yield new Deposit(payloadDir, bag, properties)
@@ -373,7 +373,7 @@ object Deposit {
   def read(baseDir: File): Try[Deposit] = {
     for {
       bagDir <- findBagDir(baseDir)
-      bag <- IBag.read(bagDir)
+      bag <- DansBag.read(bagDir)
       properties <- DepositProperties.read(depositProperties(baseDir))
     } yield new Deposit(baseDir, bag, properties)
   }
