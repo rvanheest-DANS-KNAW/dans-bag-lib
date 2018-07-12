@@ -14,7 +14,7 @@ import gov.loc.repository.bagit.util.PathUtils
 import gov.loc.repository.bagit.verify.BagVerifier
 import gov.loc.repository.bagit.writer.{ BagitFileWriter, FetchWriter, ManifestWriter, MetadataWriter }
 import nl.knaw.dans.bag.ChecksumAlgorithm.{ ChecksumAlgorithm, locDeconverter }
-import nl.knaw.dans.bag.{ ChecksumAlgorithm, FetchItem, DansBag, RelativePath, betterFileToPath }
+import nl.knaw.dans.bag.{ ChecksumAlgorithm, DansBag, FetchItem, RelativePath, betterFileToPath }
 import org.joda.time.DateTime
 import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
 
@@ -181,7 +181,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def addFetchFile(url: URL, length: Long, pathInData: RelativePath): Try[DansV0Bag] = Try {
+  override def addFetchFile(url: URL, length: Long,
+                            pathInData: RelativePath): Try[DansV0Bag] = Try {
     val destinationPath = pathInData(data)
 
     if (destinationPath.exists)
@@ -322,7 +323,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def addPayloadFile(inputStream: InputStream)(pathInData: RelativePath): Try[DansV0Bag] = Try {
+  override def addPayloadFile(inputStream: InputStream)
+                             (pathInData: RelativePath): Try[DansV0Bag] = Try {
     val file = pathInData(data)
 
     if (file.exists)
