@@ -401,6 +401,22 @@ trait DansBag {
    *         the bag is not complete)
    */
   def isComplete: Either[String, Unit]
+
+  /**
+   * Verifies if a bag is valid.
+   * According to the BagIt v16 specs, a bag is valid when:
+   * <ul>
+   *   <li>the bag is complete</li>
+   *   <li>Every checksum in every payload manifest has been successfully verified against the
+   *   contents of the corresponding file.</li>
+   *   <li>Every checksum in every tag manifest has been successfully verified against the
+   *   contents of the corresponding file.</li>
+   * </ul>
+   *
+   * @return either `Unit` (if the bag is valid) or `String` (containing the error message if
+   *         the bag is not valid)
+   */
+  def isValid: Either[String, Unit]
 }
 
 object DansBag {
