@@ -1,5 +1,7 @@
 package nl.knaw.dans.bag.v0
 
+import java.io.InputStream
+
 import better.files.File
 
 import scala.util.Try
@@ -16,4 +18,6 @@ object FilesXml {
   }
 
   def read(file: File): Try[FilesXml] = ???
+
+  def read(inputStream: InputStream): Try[FilesXml] = ???
 }
