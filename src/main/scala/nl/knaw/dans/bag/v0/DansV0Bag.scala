@@ -181,9 +181,10 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
    * @inheritdoc
    */
   override def easyUserAccount: Try[Option[String]] = Try {
-    Option(locBag.getMetadata.get(DansV0Bag.EASY_USER_ACCOUNT_KEY)).map(_.asScala.toList)
+    Option(locBag.getMetadata.get(DansV0Bag.EASY_USER_ACCOUNT_KEY))
+      .map(_.asScala)
       .collect {
-        case List(userId) => userId
+        case Seq(userId) => userId
         case userIds if userIds.size > 1 => throw new IllegalStateException(s"Only one EASY-User-Account allowed; found ${userIds.size}")
       }
   }
@@ -208,8 +209,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def fetchFiles: Seq[FetchItem] = locBag.getItemsToFetch.asScala.map(
-    fetch => fetch: FetchItem)
+  override def fetchFiles: Seq[FetchItem] = locBag.getItemsToFetch.asScala.map(fetch => fetch: FetchItem)
 
   /**
    * @inheritdoc
