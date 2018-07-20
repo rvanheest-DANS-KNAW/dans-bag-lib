@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2018 DANS - Data Archiving and Networked Services (info@dans.knaw.nl)
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -6,8 +23,8 @@
 
     <parent>
         <groupId>nl.knaw.dans.shared</groupId>
-        <artifactId>dans-prototype</artifactId>
-        <version>1.63</version>
+        <artifactId>dans-scala-project</artifactId>
+        <version>2.2.2</version>
     </parent>
 
     <groupId>nl.knaw.dans.lib</groupId>
@@ -23,37 +40,15 @@
         <tag>HEAD</tag>
     </scm>
 
-    <properties>
-        <java.version>1.8</java.version>
-        <scala.compatVersion>2.12</scala.compatVersion>
-        <scala.version>2.12.3</scala.version>
-        <scalatest.version>3.0.4</scalatest.version>
-        <bagit.version>5.2.0</bagit.version>
-        <better-files.version>3.4.0</better-files.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
     <dependencies>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.12</artifactId>
-            <version>${scalatest.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>gov.loc</groupId>
             <artifactId>bagit</artifactId>
-            <version>${bagit.version}</version>
+            <version>5.2.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.pathikrit</groupId>
             <artifactId>better-files_2.12</artifactId>
-            <version>${better-files.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -94,29 +89,7 @@
     </pluginRepositories>
 
     <build>
-        <sourceDirectory>src/main/scala</sourceDirectory>
-        <testSourceDirectory>src/test/scala</testSourceDirectory>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
-        </resources>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-            </testResource>
-        </testResources>
-
-
         <plugins>
-            <plugin>
-                <groupId>org.jfrog.buildinfo</groupId>
-                <artifactId>artifactory-maven-plugin</artifactId>
-            </plugin>
-            <!--<plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-            </plugin>-->
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
             </plugin>
@@ -126,43 +99,10 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.1</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                            <goal>doc-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <scalaCompatVersion>${scala.compatVersion}</scalaCompatVersion>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <args>
-                        <arg>-target:jvm-1.8</arg>
-                        <arg>-deprecation</arg>
-                        <arg>-feature</arg>
-                    </args>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.scalatest</groupId>
                 <artifactId>scalatest-maven-plugin</artifactId>
-                <version>1.0</version>
-                <executions>
-                    <execution>
-                        <id>test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                    <junitxml>.</junitxml>
-                    <filereports>WDF TestSuite.txt</filereports>
-                </configuration>
             </plugin>
         </plugins>
     </build>
