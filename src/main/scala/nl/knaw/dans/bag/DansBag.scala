@@ -218,6 +218,85 @@ trait DansBag {
   def removeFetchItem(item: FetchItem): DansBag
 
   /**
+   * Migrates a file from the payload directory to the fetch file, where it is referenced by the
+   * given `URL`.
+   * If the resolved path of the original file does not exist in the bag, or if the resolved path is
+   * outside of the `bag/data` directory, a `Failure` is returned.
+   * The `URL` is not checked for its resolvability, nor is this method responsible for uploading
+   * the referenced file to the specific `URL`.
+   *
+   * Please note that, while the file is removed from the bag immediately, the changes to the
+   * fetch file will only be applied to the bag on the file system once `Bag.save` is called.
+   *
+   * @param pathInData the path in `bag/data` to the file that is included in the fetch file
+   * @param url        the `URL` through which the file will be resolved in the future
+   * @return this bag, with the added reference in the fetch file
+   */
+  def replaceFileWithFetchItem(pathInData: RelativePath, url: URL): Try[DansBag]
+
+  /**
+   * Downloads a file from the list of fetch files (indicated by the relative path to `bag/data`)
+   * through the corresponding `URL` and stores it at its original place. The original reference in
+   * `fetch.txt` is removed.
+   *
+   * If the checksum(s) of the downloaded file do(es) not match the checksum(s) listed in the
+   * payload manifest(s), a `Failure` will be returned. In this case, the file is not added to the
+   * payload directory.
+   *
+   * Due to downloading the file, this method may take some time to complete and return. It is
+   * therefore strongly advised to wrap a call to this method in a `Promise`/`Future`, `Observable`
+   * or any other desired data structure that deals with latency in a proper way.
+   *
+   * Please note that this change is applied immediately and, since no changes are made to the rest
+   * of the bag, there is no need to call `Bag.save` for this to have full effect.
+   *
+   * @param pathInData a relative path in `bag/data` that is listed in the fetch file and where the
+   *                   file is stored on file system after being downloaded
+   * @return this bag, after having downloaded the file
+   */
+  def replaceFetchItemWithFile(pathInData: RelativePath): Try[DansBag]
+
+  /**
+   * Downloads a file from the list of fetch files (indicated by the `URL`) and stores it at its
+   * original place, as indicated by the `fetch.txt` file. The original reference in `fetch.txt` is
+   * removed.
+   *
+   * If the checksum(s) of the downloaded file do(es) not match the checksum(s) listed in the
+   * payload manifest(s), a `Failure` will be returned.
+   *
+   * Due to downloading the file, this method may take some time to complete and return. It is
+   * therefore strongly advised to wrap a call to this method in a `Promise`/`Future`, `Observable`
+   * or any other desired data structure that deals with latency in a proper way.
+   *
+   * Please note that this change is applied immediately and, since no changes are made to the rest
+   * of the bag, there is no need to call `Bag.save` for this to have full effect.
+   *
+   * @param url a `URL` that is listed in the fetch file and through which the file can be downloaded
+   * @return this bag, after having downloaded the file
+   */
+  def replaceFetchItemWithFile(url: URL): Try[DansBag]
+
+  /**
+   * Downloads a file from the list of fetch files (indicated by the `FetchItem`) through the
+   * corresponding `URL` and stores it at its original place. The original reference in `fetch.txt`
+   * is removed.
+   *
+   * If the checksum(s) of the downloaded file do(es) not match the checksum(s) listed in the
+   * payload manifest(s), a `Failure` will be returned.
+   *
+   * Due to downloading the file, this method may take some time to complete and return. It is
+   * therefore strongly advised to wrap a call to this method in a `Promise`/`Future`, `Observable`
+   * or any other desired data structure that deals with latency in a proper way.
+   *
+   * Please note that this change is applied immediately and, since no changes are made to the rest
+   * of the bag, there is no need to call `Bag.save` for this to have full effect.
+   *
+   * @param item the `FetchItem` containing the `URL` and path to the file in the `bag/data` directory
+   * @return this bag, after having downloaded the file
+   */
+  def replaceFetchItemWithFile(item: FetchItem): Try[DansBag]
+
+  /**
    * List all algorithms that are being used in this bag to calculate the checksums of the payload files.
    *
    * @return the set of algorithms used for calculating the payload's checksums

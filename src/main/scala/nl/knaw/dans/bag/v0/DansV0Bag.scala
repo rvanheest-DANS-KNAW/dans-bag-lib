@@ -23,19 +23,19 @@ import java.util.{ UUID, Set => jSet }
 
 import better.files.{ CloseableOps, Disposable, File, Files, ManagedResource }
 import gov.loc.repository.bagit.creator.BagCreator
-import gov.loc.repository.bagit.domain.{ Version, Bag => LocBag, Manifest => LocManifest, Metadata => LocMetadata }
+import gov.loc.repository.bagit.domain.{ Version, Bag => LocBag, Manifest => LocManifest, Metadata => LocMetadata, FetchItem => LocFetchItem }
 import gov.loc.repository.bagit.reader.BagReader
 import gov.loc.repository.bagit.util.PathUtils
 import gov.loc.repository.bagit.writer.{ BagitFileWriter, FetchWriter, ManifestWriter, MetadataWriter }
 import nl.knaw.dans.bag.ChecksumAlgorithm.{ ChecksumAlgorithm, locDeconverter }
-import nl.knaw.dans.bag.{ ChecksumAlgorithm, FetchItem, DansBag, RelativePath, betterFileToPath }
+import nl.knaw.dans.bag.{ ChecksumAlgorithm, DansBag, FetchItem, RelativePath, betterFileToPath }
 import org.joda.time.DateTime
 import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.language.implicitConversions
+import scala.language.{ implicitConversions, postfixOps }
 import scala.util.{ Failure, Success, Try }
 
 class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
@@ -195,8 +195,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
       throw new FileAlreadyExistsException(destinationPath.toString(), null, "already exists in fetch.txt")
     if (!destinationPath.isChildOf(data))
       throw new IllegalArgumentException(s"a fetch file can only point to a location inside the bag/data directory; $destinationPath is outside the data directory")
-    if (url.getProtocol != "http" && url.getProtocol != "https")
-      throw new IllegalArgumentException("url can only have host 'http' or 'https'")
+    validateURL(url)
 
     downloadFetchFile(url)((input, dest) => {
       val tempDest = dest / destinationPath.name
@@ -254,6 +253,102 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
            map = tagmanifest.getFileToChecksumMap)
         map.remove(fetchFilePath.path)
     }
+
+    this
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def replaceFileWithFetchItem(pathInData: RelativePath, url: URL): Try[DansBag] = Try {
+    val srcPath = pathInData(data)
+
+    if (srcPath.notExists)
+      throw new NoSuchFileException(srcPath.toString())
+    if (!srcPath.isChildOf(data))
+      throw new IllegalArgumentException(s"a fetch file can only point to a location inside the bag/data directory; $srcPath is outside the data directory")
+    validateURL(url)
+
+    val item = FetchItem(url, srcPath.size, srcPath)
+
+    removeFile(srcPath, data)
+
+    locBag.getItemsToFetch.add(item)
+
+    this
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def replaceFetchItemWithFile(pathInData: RelativePath): Try[DansBag] = Try {
+    val destinationPath = pathInData(data)
+
+    fetchFiles.find(_.file == destinationPath)
+      .map(replaceFetchItemWithFile)
+      .getOrElse {
+        throw new IllegalArgumentException(s"path $destinationPath does not occur in the list of fetch files")
+      }
+  }.flatten
+
+  /**
+   * @inheritdoc
+   */
+  override def replaceFetchItemWithFile(url: URL): Try[DansBag] = Try {
+    validateURL(url)
+
+    fetchFiles.find(_.url == url)
+      .map(replaceFetchItemWithFile)
+      .getOrElse {
+        throw new IllegalArgumentException(s"no such url: $url")
+      }
+  }.flatten
+
+  /**
+   * @inheritdoc
+   */
+  override def replaceFetchItemWithFile(item: FetchItem): Try[DansBag] = Try {
+    if (!locBag.getItemsToFetch.contains(item: LocFetchItem)) {
+      throw new IllegalArgumentException(s"fetch item $item does not occur in the list of fetch files")
+    }
+
+    val FetchItem(url, _, destinationPath) = item
+    if (destinationPath.exists)
+      throw new FileAlreadyExistsException(destinationPath.toString())
+    if (!destinationPath.isChildOf(data))
+      throw new IllegalArgumentException(s"a fetch file can only point to a location inside the bag/data directory; $destinationPath is outside the data directory")
+
+    downloadFetchFile(url)((inputstream, dest) => {
+      val tempDest = dest / destinationPath.name
+      jFiles.copy(inputstream, tempDest.path)
+      require(tempDest.exists, s"copy from $url to $tempDest did not succeed")
+
+      val mismatches = locBag.getPayLoadManifests.asScala
+        .map(manifest => {
+          val algorithm: ChecksumAlgorithm = manifest.getAlgorithm
+          val recordedChecksum = Option(manifest.getFileToChecksumMap.get(destinationPath.path))
+
+          (algorithm, recordedChecksum, tempDest.checksum(algorithm).toLowerCase)
+        })
+        .collect {
+          case (algorithm, Some(recordedChecksum), expectedChecksum)
+            if expectedChecksum != recordedChecksum =>
+            (algorithm, recordedChecksum, expectedChecksum)
+        }
+        .toList
+
+      mismatches match {
+        case Nil => // nothing to do
+        case (algo, checksum, expectedChecksum) :: Nil =>
+          throw InvalidChecksumException(algo, checksum, expectedChecksum)
+        case ms => throw InvalidChecksumException(ms)
+      }
+
+      destinationPath.parent.createDirectories()
+      tempDest moveTo destinationPath
+    })
+
+    locBag.getItemsToFetch.remove(item: LocFetchItem)
 
     this
   }
@@ -368,7 +463,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
     if (file.isDirectory)
       throw new IllegalArgumentException(s"cannot remove directory '$file'; you can only remove files")
 
-    removeFile(file, data, locBag.getPayLoadManifests, locBag.setPayLoadManifests)
+    removeFile(file, data)
+    removeFileFromManifests(file, locBag.getPayLoadManifests, locBag.setPayLoadManifests)
 
     this
   }
@@ -452,7 +548,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
     if (file.parent == baseDir && (file.name.startsWith("tagmanifest-") && file.name.endsWith(".txt")))
       throw new IllegalArgumentException(s"cannot remove tagmanifest file '$file'")
 
-    removeFile(file, baseDir, locBag.getTagManifests, locBag.setTagManifests)
+    removeFile(file, baseDir)
+    removeFileFromManifests(file, locBag.getTagManifests, locBag.setTagManifests)
 
     this
   }
@@ -505,6 +602,11 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
     for (file <- this.glob("tagmanifest-*.txt"))
       file.delete()
     ManifestWriter.writeTagManifests(locBag.getTagManifests, baseDir, baseDir, fileEncoding)
+  }
+
+  protected def validateURL(url: URL): Unit = {
+    if (url.getProtocol != "http" && url.getProtocol != "https")
+      throw new IllegalArgumentException("url can only have protocol 'http' or 'https'")
   }
 
   protected def openConnection(url: URL): ManagedResource[URLConnection] = {
@@ -641,8 +743,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
     recursion(this, src, pathInBag)(mutable.Queue.empty)
   }
 
-  private def removeFile(file: File, haltDeleteAt: File, manifests: jSet[LocManifest],
-                         setManifests: jSet[LocManifest] => Unit): Unit = {
+  private def removeFile(file: File, haltDeleteAt: File): Unit = {
     file.delete()
     recursiveClean(file.parent)
 
@@ -653,8 +754,6 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
         recursiveClean(file.parent)
       }
     }
-
-    removeFileFromManifests(file, manifests, setManifests)
   }
 
   private def removeFileFromManifests(file: File, manifests: jSet[LocManifest],

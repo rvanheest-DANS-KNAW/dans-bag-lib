@@ -955,6 +955,269 @@ class DansV0BagSpec extends TestSupportFixture
     }
   }
 
+  "replaceFileWithFetchItem" should "remove the file from the payload" in {
+    val bag = fetchBagV0()
+
+    (bag.data / "y").toJava should exist
+
+    inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
+      case Success(resultBag) =>
+        (resultBag.data / "y").toJava shouldNot exist
+    }
+  }
+
+  it should "remove any empty directories that are left behind after removing the file from the payload" in {
+    val bag = fetchBagV0()
+
+    (bag.data / "more" / "files" / "abc").toJava should exist
+
+    inside(bag.replaceFileWithFetchItem(_ / "more" / "files" / "abc", new URL("http://abc"))) {
+      case Success(resultBag) =>
+        (resultBag.data / "more" / "files" / "abc").toJava shouldNot exist
+        (resultBag.data / "more" / "files").toJava shouldNot exist
+        (resultBag.data / "more").toJava shouldNot exist
+        resultBag.data.toJava should exist
+    }
+  }
+
+  it should "not remove the file from the payload manifests" in {
+    val bag = fetchBagV0()
+
+    forEvery(bag.payloadManifests) {
+      case (_, manifest) =>
+        manifest should contain key (bag.data / "y")
+    }
+
+    inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
+      case Success(resultBag) =>
+        forEvery(resultBag.payloadManifests) {
+          case (_, manifest) =>
+            manifest should contain key (resultBag.data / "y")
+        }
+    }
+  }
+
+  it should "add the file to the list of fetch files" in {
+    val bag = fetchBagV0()
+    val yBytes = (bag.data / "y").size
+
+    bag.fetchFiles.map(_.file) shouldNot contain(bag.data / "y")
+
+    inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
+      case Success(resultBag) =>
+        resultBag.fetchFiles should contain(FetchItem(new URL("http://y"), yBytes, resultBag.data / "y"))
+    }
+  }
+
+  it should "fail when the file does not exist in the payload manifest" in {
+    val bag = fetchBagV0()
+
+    (bag.data / "no-such-file.txt").toJava shouldNot exist
+
+    inside(bag.replaceFileWithFetchItem(_ / "no-such-file.txt", new URL("http://xxx"))) {
+      case Failure(e: NoSuchFileException) =>
+        e should have message (bag.data / "no-such-file.txt").toString()
+    }
+  }
+
+  it should "fail when the file is not inside the bag/data directory" in {
+    val bag = fetchBagV0()
+
+    inside(bag.replaceFileWithFetchItem(_ / ".." / "fetch.txt", new URL("http://xxx"))) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"a fetch file can only point to a location inside the bag/data directory; ${ bag / "fetch.txt" } is outside the data directory"
+    }
+  }
+
+  it should "fail when the url another protocol than 'http' or 'https'" in {
+    val bag = fetchBagV0()
+
+    inside(bag.replaceFileWithFetchItem(_ / "y", (testDir / "y-new-location").url)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message "url can only have protocol 'http' or 'https'"
+    }
+  }
+
+  "replaceFetchItemWithFile by File" should "resolve a fetch item by file" in {
+    assumeCanConnect(lipsum4URL)
+
+    val bag = fetchBagV0()
+    val x = bag.data / "x"
+
+    x.toJava shouldNot exist
+
+    inside(bag.replaceFetchItemWithFile(_ / "x")) {
+      case Success(_) =>
+        x.toJava should exist
+    }
+  }
+
+  it should "fail when the file to be resolved does not occur in the list of fetch files" in {
+    val bag = fetchBagV0()
+
+    inside(bag.replaceFetchItemWithFile(_ / "non-existing-file")) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"path ${ bag.data / "non-existing-file" } does not occur in the list of fetch files"
+    }
+  }
+
+  "replaceFetchItemWithFile by URL" should "resolve a fetch item by url" in {
+    assumeCanConnect(lipsum4URL)
+
+    val bag = fetchBagV0()
+    val url = lipsum4URL
+    val path = lipsum4Dest(bag.data)
+
+    path.toJava shouldNot exist
+
+    inside(bag.replaceFetchItemWithFile(url)) {
+      case Success(_) =>
+        path.toJava should exist
+    }
+  }
+
+  it should "fail when the url does not have a 'http' or 'https' protocol" in {
+    val bag = fetchBagV0()
+    val file = testDir / "test-file.txt" writeText lipsum(2)
+
+    inside(bag.replaceFetchItemWithFile(file.url)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message "url can only have protocol 'http' or 'https'"
+    }
+  }
+
+  it should "fail when the url to be resolved does not occur in the list of fetch files" in {
+    val bag = fetchBagV0()
+
+    inside(bag.replaceFetchItemWithFile(lipsum5URL)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"no such url: $lipsum5URL"
+    }
+  }
+
+  "replaceFetchItemWithFile by FetchItem" should "download the file and put it in the payload" in {
+    assumeCanConnect(lipsum4URL)
+
+    val bag = fetchBagV0()
+    val x = bag.data / "x"
+
+    x.toJava shouldNot exist
+
+    inside(bag.replaceFetchItemWithFile(FetchItem(lipsum4URL, 12L, x))) {
+      case Success(_) =>
+        x.toJava should exist
+    }
+  }
+
+  it should "create the subdirectories that are necessary for placing the file in its proper place" in {
+    assumeCanConnect(lipsum1URL)
+
+    val bag = fetchBagV0()
+    val subU = bag.data / "sub" / "u"
+
+    subU.toJava shouldNot exist
+    subU.parent.toJava shouldNot exist
+    subU.parent.parent.toJava should exist
+
+    inside(bag.replaceFetchItemWithFile(FetchItem(lipsum1URL, 12L, subU))) {
+      case Success(_) =>
+        subU.toJava should exist
+    }
+  }
+
+  it should "remove the file from the list of fetch files" in {
+    assumeCanConnect(lipsum4URL)
+
+    val bag = fetchBagV0()
+    val x = bag.data / "x"
+
+    bag.fetchFiles.map(_.file) should contain(x)
+
+    inside(bag.replaceFetchItemWithFile(FetchItem(lipsum4URL, 12L, x))) {
+      case Success(resultBag) =>
+        resultBag.fetchFiles.map(_.file) should not contain x
+    }
+  }
+
+  it should "fail when the file to be resolved already exists within the bag" in {
+    val bag = fetchBagV0()
+    val u = (bag.data / "sub" createDirectory()) / "u" writeText lipsum(1)
+
+    u.toJava should exist
+
+    inside(bag.replaceFetchItemWithFile(FetchItem(lipsum1URL, 12L, u))) {
+      case Failure(e: FileAlreadyExistsException) =>
+        e should have message u.toString
+    }
+  }
+
+  it should "fail when the file to be resolved points outside of the be bag/data directory" in {
+    val bag = fetchBagV0()
+    val test = bag / "test"
+    val fetchItem = FetchItem(lipsum4URL, 12L, test)
+
+    bag.locBag.getItemsToFetch.add(fetchItem)
+
+    inside(bag.replaceFetchItemWithFile(fetchItem)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"a fetch file can only point to a location inside the bag/data directory; $test is outside the data directory"
+    }
+  }
+
+  it should "fail when the file to be resolved does not occur in the list of fetch files" in {
+    val bag = fetchBagV0()
+    val test = bag.data / "non-existing-file"
+    val fetchItem = FetchItem(lipsum4URL, 12L, test)
+
+    inside(bag.replaceFetchItemWithFile(fetchItem)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"fetch item $fetchItem does not occur in the list of fetch files"
+    }
+  }
+
+  it should "fail when the URL is not resolvable" in {
+    assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
+
+    val bag = fetchBagV0()
+    val yNew = bag.data / "y-new-file"
+    val fetchItem = FetchItem(new URL("http://y-new-url"), 12L, yNew)
+    bag.locBag.getItemsToFetch.add(fetchItem)
+
+    inside(bag.replaceFetchItemWithFile(fetchItem)) {
+      // it's either one of these exceptions that is thrown
+      case Failure(e: SocketTimeoutException) =>
+        e should have message "connect timed out"
+      case Failure(e: UnknownHostException) =>
+        e should have message "y-new-url"
+    }
+  }
+
+  it should "fail when the checksum of the downloaded file does not match the one listed in the payload manifests" in {
+    assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
+
+    val bag = fetchBagV0()
+    val x = bag.data / "x"
+    val checksum = bag.payloadManifests(ChecksumAlgorithm.SHA1)(x)
+    bag.locBag.getPayLoadManifests.asScala.headOption.value
+      .getFileToChecksumMap
+      .put(x, "invalid-checksum")
+
+    x.toJava shouldNot exist
+
+    val fetchItem = FetchItem(lipsum4URL, 12L, x)
+    inside(bag.replaceFetchItemWithFile(fetchItem)) {
+      case Failure(e: InvalidChecksumException) =>
+        e should have message s"checksum (${ ChecksumAlgorithm.SHA1 }) of the downloaded file was 'invalid-checksum' but should be '$checksum'"
+
+        bag.list.withFilter(_.isDirectory).map(_.name).toList should contain only (
+          "data",
+          "metadata",
+        )
+        bag.fetchFiles should contain (fetchItem)
+        x.toJava shouldNot exist
+    }
+  }
+
   "payloadManifestAlgorithms" should "list all payload manifest algorithms that are being used in this bag" in {
     val bag = multipleManifestsBagV0()
 
@@ -2142,7 +2405,7 @@ class DansV0BagSpec extends TestSupportFixture
     )
   }
 
-  it should "save fetch.txt when there were already fetch files in the bag" ignore { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/117
+  it should "save fetch.txt when there were already fetch files in the bag" in pendingUntilFixed { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/117
     assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
 
     val bag = fetchBagV0()
