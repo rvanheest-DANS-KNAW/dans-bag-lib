@@ -388,14 +388,12 @@ trait DansBag {
   /**
    * Verifies if a bag is complete.
    * According to the BagIt version 16 specs, a bag is complete when:
-   * <ul>
-   *   <li>bagit.txt is present</li>
-   *   <li>data/ directory is present</li>
-   *   <li>at least one payload manifest exists</li>
-   *   <li>all fetch items are present in the bag</li>
-   *   <li>(>= V1.0 bag) all files in the payload directory are listed in all payload manifests</li>
-   *   <li>(< V1.0 bag) all files in the payload directory are listed in at least one payload manifest</li>
-   * </ul>
+   *   - bagit.txt is present
+   *   - data/ directory is present
+   *   - at least one payload manifest exists
+   *   - all fetch items are present in the bag
+   *   - (>= V1.0 bag) all files in the payload directory are listed in all payload manifests
+   *   - (< V1.0 bag) all files in the payload directory are listed in at least one payload manifest
    *
    * @return either `Unit` (if the bag is complete) or `String` (containing the error message if
    *         the bag is not complete)
@@ -405,13 +403,11 @@ trait DansBag {
   /**
    * Verifies if a bag is valid.
    * According to the BagIt v16 specs, a bag is valid when:
-   * <ul>
-   *   <li>the bag is complete</li>
-   *   <li>Every checksum in every payload manifest has been successfully verified against the
-   *   contents of the corresponding file.</li>
-   *   <li>Every checksum in every tag manifest has been successfully verified against the
-   *   contents of the corresponding file.</li>
-   * </ul>
+   *   - the bag is complete
+   *   - Every checksum in every payload manifest has been successfully verified against the
+   *     contents of the corresponding file.
+   *   - Every checksum in every tag manifest has been successfully verified against the
+   *   contents of the corresponding file.
    *
    * @return either `Unit` (if the bag is valid) or `String` (containing the error message if
    *         the bag is not valid)
