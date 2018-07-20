@@ -154,7 +154,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
         case s if s matches "urn:uuid:[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}" =>
           Success(Option(new URI(s)))
         case s =>
-          Failure(new IllegalArgumentException(s"""Invalid format: "$s""""))
+          Failure(new IllegalStateException(s"""Invalid format: "$s""""))
       }
       .getOrElse(Success(Option.empty))
   }
@@ -180,7 +180,36 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def fetchFiles: Seq[FetchItem] = locBag.getItemsToFetch.asScala.map(fetch => fetch: FetchItem)
+  override def easyUserAccount: Try[Option[String]] = Try {
+    Option(locBag.getMetadata.get(DansV0Bag.EASY_USER_ACCOUNT_KEY)).map(_.asScala.toList)
+      .collect {
+        case List(userId) => userId
+        case userIds if userIds.size > 1 => throw new IllegalStateException(s"Only one EASY-User-Account allowed; found ${userIds.size}")
+      }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def withEasyUserAccount(userId: String): DansV0Bag = {
+    withoutEasyUserAccount()
+      .locBag.getMetadata.add(DansV0Bag.EASY_USER_ACCOUNT_KEY, userId)
+
+    this
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def withoutEasyUserAccount(): DansV0Bag = {
+    removeBagInfo(DansV0Bag.EASY_USER_ACCOUNT_KEY)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def fetchFiles: Seq[FetchItem] = locBag.getItemsToFetch.asScala.map(
+    fetch => fetch: FetchItem)
 
   /**
    * @inheritdoc
@@ -776,6 +805,7 @@ object DansV0Bag {
   val CREATED_KEY = "Created"
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
   val IS_VERSION_OF_KEY = "Is-Version-Of"
+  val EASY_USER_ACCOUNT_KEY = "EASY-User-Account"
 
   /**
    * Create an empty bag at the given `baseDir`. Based on the given `algorithms`, (empty)
