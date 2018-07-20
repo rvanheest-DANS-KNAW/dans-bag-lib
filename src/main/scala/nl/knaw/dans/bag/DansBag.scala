@@ -154,18 +154,53 @@ trait DansBag {
    */
   def fetchFiles: Seq[FetchItem]
 
-  // TODO document
-  // TODO this may cause latency, due to downloading of file. Wrapping in a Promise/Observable is recommended!
-  def addFetchFile(url: URL, length: Long, pathInData: RelativePath): Try[DansBag]
+  /**
+   * Adds the triple (url, length, path) to the `fetch.txt`.
+   * If the path already exists in the fetch, or in the payload, an Exception will occur.
+   * The PayloadManifests are updated with the checksum of the downloaded file. The length will be calculated as well.
+   *
+   * Due to calculating the checksums for all files, as well as downloading all fetch files, this
+   * method may take some time to complete and return. It is therefore strongly advised to wrap
+   * a call to this method in a `Promise`/`Future`, `Observable` or any other desired data structure
+   * that deals with latency in a proper way.
+   *
+   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once `Bag.save` is called.
+   *
+   * @param url the url where the file is to be retrieved from
+   * @param pathInData the path relative to the `bag/data` directory where the new file is virtually being placed
+   * @return this bag, with the new FetchItem
+   */
+  def addFetchItem(url: URL, pathInData: RelativePath): Try[DansBag]
 
-  // TODO document
-  def removeFetchByFile(pathInData: RelativePath): Try[DansBag]
+  /**
+   * Removes the fetchitem with this pathInData from the `fetch.txt` and the PayloadManifests.
+   *
+   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once `Bag.save` is called.
+   *
+   * @param pathInData the path relative to the `bag/data` directory of the fetchitem to be removed
+   * @return this bag, without the fetchitem
+   */
+  def removeFetchItem(pathInData: RelativePath): Try[DansBag]
 
-  // TODO document
-  def removeFetchByURL(url: URL): Try[DansBag]
+  /**
+   * Removes the fetchitem with this pathInData from the `fetch.txt` and the PayloadManifests.
+   *
+   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once `Bag.save` is called.
+   *
+   * @param url the url of the fetchitem to be removed
+   * @return this bag, without the fetchitem
+   */
+  def removeFetchItem(url: URL): Try[DansBag]
 
-  // TODO document
-  def removeFetch(item: FetchItem): DansBag
+  /**
+   * Removes the fetchitem with this pathInData from the `fetch.txt` and the PayloadManifests.
+   *
+   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once `Bag.save` is called.
+   *
+   * @param item the FetchItem to be removed
+   * @return this bag, without the FetchItem
+   */
+  def removeFetchItem(item: FetchItem): DansBag
 
   /**
    * List all algorithms that are being used in this bag to calculate the checksums of the payload files.

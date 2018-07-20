@@ -165,18 +165,19 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def fetchFiles: Seq[FetchItem] = locBag.getItemsToFetch.asScala.map(
-    fetch => fetch: FetchItem)
+  override def fetchFiles: Seq[FetchItem] = locBag.getItemsToFetch.asScala.map(fetch => fetch: FetchItem)
 
   /**
    * @inheritdoc
    */
-  override def addFetchFile(url: URL, length: Long, pathInData: RelativePath): Try[DansV0Bag] = Try {
+  override def addFetchItem(url: URL, pathInData: RelativePath): Try[DansV0Bag] = Try {
     val destinationPath = pathInData(data)
+    var length: Long = 0L
 
     if (destinationPath.exists)
-      throw new FileAlreadyExistsException(
-        destinationPath.toString())
+      throw new FileAlreadyExistsException(destinationPath.toString(), null, "already exists in payload")
+    if (fetchFiles.find(_.file == destinationPath).isDefined)
+      throw new FileAlreadyExistsException(destinationPath.toString(), null, "already exists in fetch.txt")
     if (!destinationPath.isChildOf(data))
       throw new IllegalArgumentException(s"a fetch file can only point to a location inside the bag/data directory; $destinationPath is outside the data directory")
     if (url.getProtocol != "http" && url.getProtocol != "https")
@@ -186,6 +187,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
       val tempDest = dest / destinationPath.name
       jFiles.copy(input, tempDest.path)
       require(tempDest.exists, s"copy from $url to $tempDest did not succeed")
+      length = tempDest.size
 
       for (manifest <- locBag.getPayLoadManifests.asScala;
            algorithm: ChecksumAlgorithm = manifest.getAlgorithm)
@@ -207,27 +209,27 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def removeFetchByFile(pathInData: RelativePath): Try[DansV0Bag] = Try {
+  override def removeFetchItem(pathInData: RelativePath): Try[DansV0Bag] = Try {
     val destinationPath = pathInData(data)
 
     fetchFiles.find(_.file == destinationPath)
-      .map(removeFetch)
+      .map(removeFetchItem)
       .getOrElse { throw new NoSuchFileException(destinationPath.toString) }
   }
 
   /**
    * @inheritdoc
    */
-  override def removeFetchByURL(url: URL): Try[DansV0Bag] = Try {
+  override def removeFetchItem(url: URL): Try[DansV0Bag] = Try {
     fetchFiles.find(_.url == url)
-      .map(removeFetch)
+      .map(removeFetchItem)
       .getOrElse { throw new IllegalArgumentException(s"no such URL: $url") }
   }
 
   /**
    * @inheritdoc
    */
-  override def removeFetch(item: FetchItem): DansV0Bag = {
+  override def removeFetchItem(item: FetchItem): DansV0Bag = {
     if (locBag.getItemsToFetch.remove(FetchItem.locDeconverter(item)))
       removeFileFromManifests(item.file, locBag.getPayLoadManifests, locBag.setPayLoadManifests)
 
