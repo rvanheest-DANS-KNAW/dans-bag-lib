@@ -22,7 +22,7 @@ import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException }
 import java.util.UUID
 
 import better.files.File
-import gov.loc.repository.bagit.conformance.{ BagitWarning, BagLinter }
+import gov.loc.repository.bagit.conformance.{ BagLinter, BagitWarning }
 import gov.loc.repository.bagit.domain.Version
 import gov.loc.repository.bagit.verify.BagVerifier
 import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
@@ -32,7 +32,6 @@ import nl.knaw.dans.bag.fixtures._
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{ DateTime, DateTimeZone }
 
-import scala.collection
 import scala.collection.JavaConverters._
 import scala.language.{ existentials, implicitConversions, postfixOps }
 import scala.util.{ Failure, Success, Try }
@@ -1239,11 +1238,11 @@ class DansV0BagSpec extends TestSupportFixture
       case Failure(e: InvalidChecksumException) =>
         e should have message s"checksum (${ ChecksumAlgorithm.SHA1 }) of the downloaded file was 'invalid-checksum' but should be '$checksum'"
 
-        bag.list.withFilter(_.isDirectory).map(_.name).toList should contain only (
+        bag.list.withFilter(_.isDirectory).map(_.name).toList should contain only(
           "data",
           "metadata",
         )
-        bag.fetchFiles should contain (fetchItem)
+        bag.fetchFiles should contain(fetchItem)
         x.toJava shouldNot exist
     }
   }
