@@ -1,3 +1,18 @@
+/**
+ * Copyright (C) 2018 DANS - Data Archiving and Networked Services (info@dans.knaw.nl)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package nl.knaw.dans.bag
 
 import java.io.InputStream
@@ -33,7 +48,7 @@ trait DansBag {
 
   /**
    * Change the bag's `gov.loc.repository.bagit.domain.Version` to a new `Version`.
-   * Please note that this will only be synced with `bagit.txt` once `Bag.save` is called.
+   * Please note that this will only be synced with `bagit.txt` once [[DansBag#save]] is called.
    *
    * @param version the new `Version` of the bag
    * @return this bag, with the new `Version`
@@ -42,7 +57,7 @@ trait DansBag {
 
   /**
    * Change the bag's `gov.loc.repository.bagit.domain.Version` to a new `Version`.
-   * Please note that this will only be synced with `bagit.txt` once `Bag.save` is called.
+   * Please note that this will only be synced with `bagit.txt` once [[DansBag#save]] is called.
    *
    * @param major major part of the version number
    * @param minor minor part of the version number
@@ -57,7 +72,7 @@ trait DansBag {
 
   /**
    * Change the bag's `java.nio.charset.Charset` to a new `Charset`.
-   * Please note that this will only be synced with `bagit.txt` once `Bag.save` is called.
+   * Please note that this will only be synced with `bagit.txt` once [[DansBag#save]] is called.
    *
    * @param charset the new `Charset` of the bag
    * @return this bag, with the new `Charset`
@@ -74,7 +89,7 @@ trait DansBag {
 
   /**
    * Add an entry to the bagInfo. Please note that this will only be synced with `bag-info.txt`
-   * once `Bag.save` is called.
+   * once [[DansBag#save]] is called.
    *
    * @param key   the key of the new entry
    * @param value the value of the new entry
@@ -84,7 +99,7 @@ trait DansBag {
 
   /**
    * Remove all entries with the given key. Please note that this will only be synced with
-   * `bag-info.txt` once `Bag.save` is called.
+   * `bag-info.txt` once [[DansBag#save]] is called.
    *
    * @param key the key to be removed
    * @return this bag, without the removed entries
@@ -103,7 +118,7 @@ trait DansBag {
   /**
    * Adds the key 'Created' from `bag-info.txt`. If the key is already present, it is replaced with
    * the new value. When no argument is supplied, a default value `DateTime.now()` is used instead.
-   * Please note that this will only be synced with `bag-info.txt` once `Bag.save` is called.
+   * Please note that this will only be synced with `bag-info.txt` once [[DansBag#save]] is called.
    *
    * @param created the `DateTime` object on which the bag's content was created
    * @return this bag, with the new value for 'Created' in `bag-info.txt`
@@ -112,7 +127,7 @@ trait DansBag {
 
   /**
    * Remove the entry with key 'Created' from `bag-info.txt`.
-   * Please note that this will only be synced with `bag-info.txt` once `Bag.save` is called.
+   * Please note that this will only be synced with `bag-info.txt` once [[DansBag#save]] is called.
    *
    * @return this bag, without the removed entry
    */
@@ -132,7 +147,7 @@ trait DansBag {
    * Adds the key 'Is-Version-Of' from `bag-info.txt`. If the key is already present, it is replaced
    * with the new value. The given `java.util.UUID` is used to construct a `java.net.URI` of the
    * form `urn:uuid:[uuid]`.
-   * Please note that this will only be synced with `bag-info.txt` once `Bag.save` is called.
+   * Please note that this will only be synced with `bag-info.txt` once [[DansBag#save]] is called.
    *
    * @param uuid the `UUID` of the previous revision of this bag
    * @return this bag, with the new value for 'Is-Version-Of' in `bag-info.txt`
@@ -141,11 +156,38 @@ trait DansBag {
 
   /**
    * Remove the entry with key 'Is-Version-Of' from `bag-info.txt`.
-   * Please note that this will only be synced with `bag-info.txt` once `Bag.save` is called.
+   * Please note that this will only be synced with `bag-info.txt` once [[DansBag#save]] is called.
    *
    * @return this bag, without the removed entry
    */
   def withoutIsVersionOf(): DansBag
+
+  /**
+   * Retrieves the value for the 'EASY-User-Account' key.
+   *
+   * @return the EASY user account value
+   */
+  def easyUserAccount: Try[Option[String]]
+
+  /**
+   * Adds `userId` under the key 'EASY-User-Account' to `bag-info.txt`. If the key is already present the
+   * value is overwritten.
+   *
+   * Please, note that this will not be persisted to disk until [[DansBag#save]] is used.
+   *
+   * @return the modified DansBag
+   */
+  def withEasyUserAccount(userId: String): DansBag
+
+
+  /**
+   * Removes the entry with key 'EASY-User-Account' from `bag-info.txt`.
+   *
+   * Please, note that this will not be persisted to disk until [[DansBag#save]] is used.
+   *
+   * @return the modified DansBag
+   */
+  def withoutEasyUserAccount(): DansBag
 
   /**
    * Lists all files that are stated in `fetch.txt`.
@@ -154,18 +196,132 @@ trait DansBag {
    */
   def fetchFiles: Seq[FetchItem]
 
-  // TODO document
-  // TODO this may cause latency, due to downloading of file. Wrapping in a Promise/Observable is recommended!
-  def addFetchFile(url: URL, length: Long, pathInData: RelativePath): Try[DansBag]
+  /**
+   * Adds the triple (url, length, path) to the `fetch.txt`.
+   * If the path already exists in the fetch, or in the payload, an Exception will occur.
+   * The PayloadManifests are updated with the checksum of the downloaded file. The length will be calculated as well.
+   *
+   * Due to calculating the checksums for all files, as well as downloading all fetch files, this
+   * method may take some time to complete and return. It is therefore strongly advised to wrap
+   * a call to this method in a `Promise`/`Future`, `Observable` or any other desired data structure
+   * that deals with latency in a proper way.
+   *
+   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once [[DansBag#save]] is called.
+   *
+   * @param url the url where the file is to be retrieved from
+   * @param pathInData the path relative to the `bag/data` directory where the new file is virtually being placed
+   * @return this bag, with the new FetchItem
+   */
+  def addFetchItem(url: URL, pathInData: RelativePath): Try[DansBag]
 
-  // TODO document
-  def removeFetchByFile(pathInData: RelativePath): Try[DansBag]
+  /**
+   * Removes the fetchitem with this pathInData from the `fetch.txt` and the PayloadManifests.
+   *
+   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once [[DansBag#save]] is called.
+   *
+   * @param pathInData the path relative to the `bag/data` directory of the fetchitem to be removed
+   * @return this bag, without the fetchitem
+   */
+  def removeFetchItem(pathInData: RelativePath): Try[DansBag]
 
-  // TODO document
-  def removeFetchByURL(url: URL): Try[DansBag]
+  /**
+   * Removes the fetchitem with this pathInData from the `fetch.txt` and the PayloadManifests.
+   *
+   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once [[DansBag#save]] is called.
+   *
+   * @param url the url of the fetchitem to be removed
+   * @return this bag, without the fetchitem
+   */
+  def removeFetchItem(url: URL): Try[DansBag]
 
-  // TODO document
-  def removeFetch(item: FetchItem): DansBag
+  /**
+   * Removes the fetchitem with this pathInData from the `fetch.txt` and the PayloadManifests.
+   *
+   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once [[DansBag#save]] is called.
+   *
+   * @param item the FetchItem to be removed
+   * @return this bag, without the FetchItem
+   */
+  def removeFetchItem(item: FetchItem): DansBag
+
+  /**
+   * Migrates a file from the payload directory to the fetch file, where it is referenced by the
+   * given `URL`.
+   * If the resolved path of the original file does not exist in the bag, or if the resolved path is
+   * outside of the `bag/data` directory, a `Failure` is returned.
+   * The `URL` is not checked for its resolvability, nor is this method responsible for uploading
+   * the referenced file to the specific `URL`.
+   *
+   * Please note that, while the file is removed from the bag immediately, the changes to the
+   * fetch file will only be applied to the bag on the file system once [[DansBag#save]] is called.
+   *
+   * @param pathInData the path in `bag/data` to the file that is included in the fetch file
+   * @param url        the `URL` through which the file will be resolved in the future
+   * @return this bag, with the added reference in the fetch file
+   */
+  def replaceFileWithFetchItem(pathInData: RelativePath, url: URL): Try[DansBag]
+
+  /**
+   * Downloads a file from the list of fetch files (indicated by the relative path to `bag/data`)
+   * through the corresponding `URL` and stores it at its original place. The original reference in
+   * `fetch.txt` is removed.
+   *
+   * If the checksum(s) of the downloaded file do(es) not match the checksum(s) listed in the
+   * payload manifest(s), a `Failure` will be returned. In this case, the file is not added to the
+   * payload directory.
+   *
+   * Due to downloading the file, this method may take some time to complete and return. It is
+   * therefore strongly advised to wrap a call to this method in a `Promise`/`Future`, `Observable`
+   * or any other desired data structure that deals with latency in a proper way.
+   *
+   * Please note that this change is applied immediately and, since no changes are made to the rest
+   * of the bag, there is no need to call [[DansBag#save]] for this to have full effect.
+   *
+   * @param pathInData a relative path in `bag/data` that is listed in the fetch file and where the
+   *                   file is stored on file system after being downloaded
+   * @return this bag, after having downloaded the file
+   */
+  def replaceFetchItemWithFile(pathInData: RelativePath): Try[DansBag]
+
+  /**
+   * Downloads a file from the list of fetch files (indicated by the `URL`) and stores it at its
+   * original place, as indicated by the `fetch.txt` file. The original reference in `fetch.txt` is
+   * removed.
+   *
+   * If the checksum(s) of the downloaded file do(es) not match the checksum(s) listed in the
+   * payload manifest(s), a `Failure` will be returned.
+   *
+   * Due to downloading the file, this method may take some time to complete and return. It is
+   * therefore strongly advised to wrap a call to this method in a `Promise`/`Future`, `Observable`
+   * or any other desired data structure that deals with latency in a proper way.
+   *
+   * Please note that this change is applied immediately and, since no changes are made to the rest
+   * of the bag, there is no need to call [[DansBag#save]] for this to have full effect.
+   *
+   * @param url a `URL` that is listed in the fetch file and through which the file can be downloaded
+   * @return this bag, after having downloaded the file
+   */
+  def replaceFetchItemWithFile(url: URL): Try[DansBag]
+
+  /**
+   * Downloads a file from the list of fetch files (indicated by the [[FetchItem]]) through the
+   * corresponding `URL` and stores it at its original place. The original reference in `fetch.txt`
+   * is removed.
+   *
+   * If the checksum(s) of the downloaded file do(es) not match the checksum(s) listed in the
+   * payload manifest(s), a `Failure` will be returned.
+   *
+   * Due to downloading the file, this method may take some time to complete and return. It is
+   * therefore strongly advised to wrap a call to this method in a `Promise`/`Future`, `Observable`
+   * or any other desired data structure that deals with latency in a proper way.
+   *
+   * Please note that this change is applied immediately and, since no changes are made to the rest
+   * of the bag, there is no need to call [[DansBag#save]] for this to have full effect.
+   *
+   * @param item the [[FetchItem]] containing the URL and path to the file in the `bag/data` directory
+   * @return this bag, after having downloaded the file
+   */
+  def replaceFetchItemWithFile(item: FetchItem): Try[DansBag]
 
   /**
    * List all algorithms that are being used in this bag to calculate the checksums of the payload files.
@@ -181,7 +337,7 @@ trait DansBag {
    * (default false) for this behaviour.
    * In both use cases of this method, the payload manifest will be added to all tag manifests with
    * a temporary value, indicating that the real checksum for the payload manifest will only be
-   * recalculated on calling `Bag.save`.
+   * recalculated on calling [[DansBag#save]].
    * Since fetch files are also listed in all payload manifests, this method will upon encountering
    * fetch files, download them using the specified URL and calculate their checksums according to
    * the new/updated algorithm. Afterwards the downloaded files are deleted.
@@ -192,7 +348,7 @@ trait DansBag {
    * that deals with latency in a proper way.
    *
    * Please note that this new/updated algorithm will only be added to the bag on the file system
-   * once `Bag.save` is called.
+   * once [[DansBag#save]] is called.
    *
    * @param checksumAlgorithm the algorithm for which the payload checksums will be added or updated
    * @param updateManifest    indicates whether it should update (`true`) or add (`false`) the algorithm
@@ -206,7 +362,7 @@ trait DansBag {
    * It also removes the payload manifest from all tagmanifests as well.
    *
    * Please note that this change will only be applied to the bag on the file system once
-   * `Bag.save` is called.
+   * [[DansBag#save]] is called.
    *
    * @param checksumAlgorithm the algorithm to be removed from the bag with respect to the payload files
    * @return this bag, without the removed algorithm
@@ -227,7 +383,7 @@ trait DansBag {
    * (default false) for this behaviour.
    *
    * Please note that this new/updated algorithm will only be added to the bag on the file system
-   * once `Bag.save` is called.
+   * once [[DansBag#save]] is called.
    *
    * @param checksumAlgorithm the algorithm for which the tagfiles' checksums will be added or updated
    * @param updateManifest    indicates whether it should update (`true`) or add (`false`) the algorithm
@@ -240,7 +396,7 @@ trait DansBag {
    * Remove an algorithm from the bag, which was used for calculating the checksums of the tag files.
    *
    * Please note that this change will only be applied to the bag on the file system once
-   * `Bag.save` is called.
+   * [[DansBag#save]] is called.
    *
    * @param checksumAlgorithm the algorithm to be removed from the bag with respect to the tag files
    * @return this bag, without the removed algorithm
@@ -265,7 +421,7 @@ trait DansBag {
    * allowed to add a payload file using this method that is already declared in `fetch.txt`.
    *
    * Please note that, while the new file is added to the bag immediately, the changes to the
-   * payload manifests will only be applied to the bag on the file system once `Bag.save` is called.
+   * payload manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
    *
    * @param inputStream the source of the new file to be added to the bag
    * @param pathInData  the path relative to the `bag/data` directory where the new file is being placed
@@ -283,7 +439,7 @@ trait DansBag {
    * allowed to add a payload file using this method that is already declared in `fetch.txt`.
    *
    * Please note that, while the new file is added to the bag immediately, the changes to the
-   * payload manifests will only be applied to the bag on the file system once `Bag.save` is called.
+   * payload manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
    *
    * @param src        the source of the new file to be added to the bag
    * @param pathInData the path relative to the `bag/data` directory where the new file is being placed
@@ -300,7 +456,7 @@ trait DansBag {
    * a `scala.util.Failure` is returned.
    *
    * Please note that, while the file is removed from the bag immediately, the changes to the
-   * payload manifests will only be applied to the bag on the file system once `Bag.save` is called.
+   * payload manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
    *
    * @param pathInData the path to the file within `bag/data` that is being removed
    * @return this bag, without the payload manifest entries for the removed file
@@ -323,7 +479,7 @@ trait DansBag {
    * `scala.util.Failure`. This method also adds the checksum of the new file to all tag manifests.
    *
    * Please note that, while the new file is added to the bag immediately, the changes to the
-   * tag manifests will only be applied to the bag on the file system once `Bag.save` is called.
+   * tag manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
    *
    * @param inputStream the source of the new file to be added to the bag
    * @param pathInBag   the path relative to the bag's base directory where the new file is being placed
@@ -340,7 +496,7 @@ trait DansBag {
    * This method also adds the checksum of the new file to all tag manifests.
    *
    * Please note that, while the new file is added to the bag immediately, the changes to the
-   * tag manifests will only be applied to the bag on the file system once `Bag.save` is called.
+   * tag manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
    *
    * @param src       the source of the new file to be added to the bag
    * @param pathInBag the path relative to the bag's base directory where the new file is being placed
@@ -357,7 +513,7 @@ trait DansBag {
    * `fetch.txt`, `manifest-*.txt` or `tagmanifest-*.txt`) a `scala.util.Failure` is returned.
    *
    * Please note that, while the file is removed from the bag immediately, the changes to the
-   * tag manifests will only be applied to the bag on the file system once `Bag.save` is called.
+   * tag manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
    *
    * @param pathInBag the path to the file within the bag's base directory that is being removed
    * @return this bag, without the tag manifest entries for the removed file
@@ -367,7 +523,7 @@ trait DansBag {
   /**
    * Save all changes made to this bag (using the above methods) to the file system.
    *
-   * If there are no payload algorithms left (due to excessive calls to `removePayloadManifestAlgorithm`),
+   * If there are no payload algorithms left (due to excessive calls to [[DansBag#removePayloadManifestAlgorithm]]),
    * this method will fail before any writing to the file system is performed. It will also fail if
    * the bag is not writeable.
    *

@@ -1,3 +1,18 @@
+/**
+ * Copyright (C) 2018 DANS - Data Archiving and Networked Services (info@dans.knaw.nl)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package nl.knaw.dans.bag.v0
 
 import java.io.IOException
@@ -7,7 +22,7 @@ import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException }
 import java.util.UUID
 
 import better.files.File
-import gov.loc.repository.bagit.conformance.{ BagLinter, BagitWarning }
+import gov.loc.repository.bagit.conformance.{ BagitWarning, BagLinter }
 import gov.loc.repository.bagit.domain.Version
 import gov.loc.repository.bagit.verify.BagVerifier
 import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
@@ -17,6 +32,7 @@ import nl.knaw.dans.bag.fixtures._
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{ DateTime, DateTimeZone }
 
+import scala.collection
 import scala.collection.JavaConverters._
 import scala.language.{ existentials, implicitConversions, postfixOps }
 import scala.util.{ Failure, Success, Try }
@@ -550,7 +566,7 @@ class DansV0BagSpec extends TestSupportFixture
     bag.locBag.getMetadata.add(DansV0Bag.IS_VERSION_OF_KEY, "not-a-uri")
 
     bag.isVersionOf should matchPattern {
-      case Failure(e: IllegalArgumentException) if e.getMessage == "Invalid format: \"not-a-uri\"" =>
+      case Failure(e: IllegalStateException) if e.getMessage == "Invalid format: \"not-a-uri\"" =>
     }
   }
 
@@ -617,16 +633,45 @@ class DansV0BagSpec extends TestSupportFixture
     simpleBagV0().fetchFiles shouldBe empty
   }
 
-  "addFetch" should "add the fetch item to the bag's list of fetch items" in {
+  "easyUserAccount" should "return Success(Option.empty) if no account present" in {
+    simpleBagV0().easyUserAccount shouldBe Success(Option.empty)
+  }
+
+  it should "return the one account if one is present" in {
+    simpleBagV0().withEasyUserAccount("someAccount").easyUserAccount shouldBe Success(Some("someAccount"))
+  }
+
+  it should "return a Failure of IllegalStateException if more than one account is found" in {
+    simpleBagV0()
+      .addBagInfo(DansV0Bag.EASY_USER_ACCOUNT_KEY, "account1")
+      .addBagInfo(DansV0Bag.EASY_USER_ACCOUNT_KEY, "account2").easyUserAccount should matchPattern {
+      case Failure(e: IllegalStateException) if e.getMessage.startsWith("Only one EASY-User-Account allowed") =>
+
+    }
+  }
+
+  "withEasyUserAccount" should "add EASY-User-Account to bag-info.txt" in {
+    val bag = simpleBagV0().withEasyUserAccount("someAccount")
+    bag.bagInfo should contain key DansV0Bag.EASY_USER_ACCOUNT_KEY
+    bag.bagInfo(DansV0Bag.EASY_USER_ACCOUNT_KEY) shouldBe Seq("""someAccount""")
+  }
+
+  "withoutEasyUserAccount" should "remove EASY-User-Account to bag-info.txt" in {
+    val bag = simpleBagV0().withEasyUserAccount("someAccount")
+    bag.bagInfo should contain key DansV0Bag.EASY_USER_ACCOUNT_KEY
+    bag.withoutEasyUserAccount().bagInfo shouldNot contain key DansV0Bag.EASY_USER_ACCOUNT_KEY
+  }
+
+  "addFetchItem" should "add the fetch item to the bag's list of fetch items" in {
     val fetchFileSrc = lipsum1URL
     assumeCanConnect(fetchFileSrc)
 
     val bag = fetchBagV0()
 
-    inside(bag.addFetchFile(fetchFileSrc, 12345L, _ / "to-be-fetched" / "lipsum2.txt")) {
+    inside(bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum1.txt")) {
       case Success(resultBag) =>
         resultBag.fetchFiles should contain(
-          FetchItem(fetchFileSrc, 12345L, bag.data / "to-be-fetched" / "lipsum2.txt")
+          FetchItem(fetchFileSrc, lipsum1Size, bag.data / "to-be-fetched" / "lipsum1.txt")
         )
     }
   }
@@ -641,7 +686,7 @@ class DansV0BagSpec extends TestSupportFixture
       ChecksumAlgorithm.SHA1,
       ChecksumAlgorithm.SHA256,
     )
-    inside(bag.addFetchFile(fetchFileSrc, 12345L, _ / "to-be-fetched" / "lipsum3.txt")) {
+    inside(bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum3.txt")) {
       case Success(resultBag) =>
         val destination = resultBag.data / "to-be-fetched" / "lipsum3.txt"
         resultBag.payloadManifests(ChecksumAlgorithm.SHA1) should contain(destination -> lipsum2Sha1)
@@ -657,7 +702,7 @@ class DansV0BagSpec extends TestSupportFixture
 
     val beforeListing = bag.listRecursively.toList
 
-    inside(bag.addFetchFile(fetchFileSrc, 12345L, _ / "to-be-fetched" / "lipsum4.txt")) {
+    inside(bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum4.txt")) {
       case Success(resultBag) =>
         val afterListing = resultBag.listRecursively.toList
 
@@ -677,7 +722,7 @@ class DansV0BagSpec extends TestSupportFixture
         manifest should not contain key(bag.baseDir / "fetch.txt")
     }
 
-    inside(bag.addFetchFile(fetchFileSrc, 12345L, _ / "to-be-fetched" / "lipsum5.txt")) {
+    inside(bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum5.txt")) {
       case Success(resultBag) =>
         forEvery(resultBag.tagManifests) {
           case (_, manifest) =>
@@ -686,12 +731,25 @@ class DansV0BagSpec extends TestSupportFixture
     }
   }
 
-  it should "fail when the destination already exists" in {
+  it should "fail when the destination already exists in the payload" in {
     val bag = simpleBagV0()
     val fetchFileSrc = lipsum4URL
 
-    bag.addFetchFile(fetchFileSrc, 12345L, _ / "x") should matchPattern {
-      case Failure(e: FileAlreadyExistsException) if e.getMessage == (bag.data / "x").toString =>
+    bag.addFetchItem(fetchFileSrc, _ / "x") should matchPattern {
+      case Failure(e: FileAlreadyExistsException) if e.getMessage == (bag.data / "x: already exists in payload").toString =>
+    }
+  }
+
+  it should "fail when the destination already exists in the fetch.txt" in {
+    val fetchFileSrc = lipsum1URL
+    assumeCanConnect(fetchFileSrc)
+
+    val bag = fetchBagV0()
+
+    bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum1.txt")
+
+    bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum1.txt") should matchPattern {
+      case Failure(e: FileAlreadyExistsException) if e.getMessage == (bag.data / "to-be-fetched/lipsum1.txt: already exists in fetch.txt").toString =>
     }
   }
 
@@ -699,7 +757,7 @@ class DansV0BagSpec extends TestSupportFixture
     val bag = simpleBagV0()
     val fetchFileSrc = lipsum5URL
 
-    bag.addFetchFile(fetchFileSrc, 12345L, _ / ".." / "lipsum1.txt") should matchPattern {
+    bag.addFetchItem(fetchFileSrc, _ / ".." / "lipsum1.txt") should matchPattern {
       case Failure(e: IllegalArgumentException) if e.getMessage == s"a fetch file can only point to a location inside the bag/data directory; ${ bag / "lipsum1.txt" } is outside the data directory" =>
     }
   }
@@ -707,7 +765,7 @@ class DansV0BagSpec extends TestSupportFixture
   it should "fail when the file cannot be downloaded from the provided url" in {
     val bag = simpleBagV0()
 
-    inside(bag.addFetchFile(new URL("http://x"), 12345L, _ / "to-be-fetched" / "failing-url.txt")) {
+    inside(bag.addFetchItem(new URL("http://x"), _ / "to-be-fetched" / "failing-url.txt")) {
       // it's either one of these exceptions that is thrown
       case Failure(e: SocketTimeoutException) =>
         e should have message "connect timed out"
@@ -716,14 +774,14 @@ class DansV0BagSpec extends TestSupportFixture
     }
   }
 
-  "removeFetchByFile" should "remove the fetch item from the list" in {
+  "removeFetchItem by File" should "remove the fetch item from the list" in {
     val bag = fetchBagV0()
     val relativePath: RelativePath = _ / "x"
     val absolutePath = relativePath(bag.data)
 
     bag.fetchFiles.map(_.file) should contain(absolutePath)
 
-    inside(bag.removeFetchByFile(relativePath)) {
+    inside(bag.removeFetchItem(relativePath)) {
       case Success(resultBag) =>
         resultBag.fetchFiles.map(_.file) should not contain absolutePath
     }
@@ -739,7 +797,7 @@ class DansV0BagSpec extends TestSupportFixture
         manifest should contain key absolutePath
     }
 
-    inside(bag.removeFetchByFile(relativePath)) {
+    inside(bag.removeFetchItem(relativePath)) {
       case Success(resultBag) =>
         forEvery(resultBag.payloadManifests) {
           case (_, manifest) =>
@@ -761,10 +819,10 @@ class DansV0BagSpec extends TestSupportFixture
         manifest should contain key bag.baseDir / "fetch.txt"
     }
 
-    val result = bag.removeFetchByFile(relativePath1)
-      .flatMap(_.removeFetchByFile(relativePath2))
-      .flatMap(_.removeFetchByFile(relativePath3))
-      .flatMap(_.removeFetchByFile(relativePath4))
+    val result = bag.removeFetchItem(relativePath1)
+      .flatMap(_.removeFetchItem(relativePath2))
+      .flatMap(_.removeFetchItem(relativePath3))
+      .flatMap(_.removeFetchItem(relativePath4))
 
     inside(result) {
       case Success(resultBag) =>
@@ -782,20 +840,20 @@ class DansV0BagSpec extends TestSupportFixture
 
     bag.fetchFiles.map(_.file) should not contain absolutePath
 
-    inside(bag.removeFetchByFile(relativePath)) {
+    inside(bag.removeFetchItem(relativePath)) {
       case Failure(e: NoSuchFileException) =>
         e should have message absolutePath.toString
         bag.fetchFiles.map(_.file) should not contain absolutePath
     }
   }
 
-  "removeFetchByURL" should "remove the fetch item from the list" in {
+  "removeFetchItem by URL" should "remove the fetch item from the list" in {
     val bag = fetchBagV0()
     val url = lipsum1URL
 
     bag.fetchFiles.map(_.url) should contain(url)
 
-    inside(bag.removeFetchByURL(url)) {
+    inside(bag.removeFetchItem(url)) {
       case Success(resultBag) =>
         resultBag.fetchFiles.map(_.url) should not contain url
     }
@@ -812,7 +870,7 @@ class DansV0BagSpec extends TestSupportFixture
             manifest should contain key absolutePath
         }
 
-        inside(bag.removeFetchByURL(url)) {
+        inside(bag.removeFetchItem(url)) {
           case Success(resultBag) =>
             forEvery(resultBag.payloadManifests) {
               case (_, manifest) =>
@@ -835,10 +893,10 @@ class DansV0BagSpec extends TestSupportFixture
         manifest should contain key bag.baseDir / "fetch.txt"
     }
 
-    val result = bag.removeFetchByURL(url1)
-      .flatMap(_.removeFetchByURL(url2))
-      .flatMap(_.removeFetchByURL(url3))
-      .flatMap(_.removeFetchByURL(url4))
+    val result = bag.removeFetchItem(url1)
+      .flatMap(_.removeFetchItem(url2))
+      .flatMap(_.removeFetchItem(url3))
+      .flatMap(_.removeFetchItem(url4))
 
     inside(result) {
       case Success(resultBag) =>
@@ -855,18 +913,18 @@ class DansV0BagSpec extends TestSupportFixture
 
     bag.fetchFiles.map(_.url) should not contain url
 
-    inside(bag.removeFetchByURL(url)) {
+    inside(bag.removeFetchItem(url)) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"no such URL: $url"
         bag.fetchFiles.map(_.url) should not contain url
     }
   }
 
-  "removeFetch" should "remove the fetch item from the list" in {
+  "removeFetchItem by FetchItem" should "remove the fetch item from the list" in {
     val bag = fetchBagV0()
     val fetchItem = bag.fetchFiles.head
 
-    val resultBag = bag.removeFetch(fetchItem)
+    val resultBag = bag.removeFetchItem(fetchItem)
     resultBag.fetchFiles should not contain fetchItem
   }
 
@@ -879,7 +937,7 @@ class DansV0BagSpec extends TestSupportFixture
         manifest should contain key fetchItem.file
     }
 
-    val resultBag = bag.removeFetch(fetchItem)
+    val resultBag = bag.removeFetchItem(fetchItem)
 
     forEvery(resultBag.payloadManifests) {
       case (_, manifest) =>
@@ -897,10 +955,10 @@ class DansV0BagSpec extends TestSupportFixture
         manifest should contain key bag.baseDir / "fetch.txt"
     }
 
-    val resultBag = bag.removeFetch(fetch1)
-      .removeFetch(fetch2)
-      .removeFetch(fetch3)
-      .removeFetch(fetch4)
+    val resultBag = bag.removeFetchItem(fetch1)
+      .removeFetchItem(fetch2)
+      .removeFetchItem(fetch3)
+      .removeFetchItem(fetch4)
 
     forEvery(resultBag.tagManifests) {
       case (_, manifest) =>
@@ -918,12 +976,275 @@ class DansV0BagSpec extends TestSupportFixture
         manifest shouldNot contain key fetchItem.file
     }
 
-    val resultBag = bag.removeFetch(fetchItem)
+    val resultBag = bag.removeFetchItem(fetchItem)
 
     resultBag.fetchFiles should not contain fetchItem
     forEvery(resultBag.payloadManifests) {
       case (_, manifest) =>
         manifest shouldNot contain key fetchItem.file
+    }
+  }
+
+  "replaceFileWithFetchItem" should "remove the file from the payload" in {
+    val bag = fetchBagV0()
+
+    (bag.data / "y").toJava should exist
+
+    inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
+      case Success(resultBag) =>
+        (resultBag.data / "y").toJava shouldNot exist
+    }
+  }
+
+  it should "remove any empty directories that are left behind after removing the file from the payload" in {
+    val bag = fetchBagV0()
+
+    (bag.data / "more" / "files" / "abc").toJava should exist
+
+    inside(bag.replaceFileWithFetchItem(_ / "more" / "files" / "abc", new URL("http://abc"))) {
+      case Success(resultBag) =>
+        (resultBag.data / "more" / "files" / "abc").toJava shouldNot exist
+        (resultBag.data / "more" / "files").toJava shouldNot exist
+        (resultBag.data / "more").toJava shouldNot exist
+        resultBag.data.toJava should exist
+    }
+  }
+
+  it should "not remove the file from the payload manifests" in {
+    val bag = fetchBagV0()
+
+    forEvery(bag.payloadManifests) {
+      case (_, manifest) =>
+        manifest should contain key (bag.data / "y")
+    }
+
+    inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
+      case Success(resultBag) =>
+        forEvery(resultBag.payloadManifests) {
+          case (_, manifest) =>
+            manifest should contain key (resultBag.data / "y")
+        }
+    }
+  }
+
+  it should "add the file to the list of fetch files" in {
+    val bag = fetchBagV0()
+    val yBytes = (bag.data / "y").size
+
+    bag.fetchFiles.map(_.file) shouldNot contain(bag.data / "y")
+
+    inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
+      case Success(resultBag) =>
+        resultBag.fetchFiles should contain(FetchItem(new URL("http://y"), yBytes, resultBag.data / "y"))
+    }
+  }
+
+  it should "fail when the file does not exist in the payload manifest" in {
+    val bag = fetchBagV0()
+
+    (bag.data / "no-such-file.txt").toJava shouldNot exist
+
+    inside(bag.replaceFileWithFetchItem(_ / "no-such-file.txt", new URL("http://xxx"))) {
+      case Failure(e: NoSuchFileException) =>
+        e should have message (bag.data / "no-such-file.txt").toString()
+    }
+  }
+
+  it should "fail when the file is not inside the bag/data directory" in {
+    val bag = fetchBagV0()
+
+    inside(bag.replaceFileWithFetchItem(_ / ".." / "fetch.txt", new URL("http://xxx"))) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"a fetch file can only point to a location inside the bag/data directory; ${ bag / "fetch.txt" } is outside the data directory"
+    }
+  }
+
+  it should "fail when the url another protocol than 'http' or 'https'" in {
+    val bag = fetchBagV0()
+
+    inside(bag.replaceFileWithFetchItem(_ / "y", (testDir / "y-new-location").url)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message "url can only have protocol 'http' or 'https'"
+    }
+  }
+
+  "replaceFetchItemWithFile by File" should "resolve a fetch item by file" in {
+    assumeCanConnect(lipsum4URL)
+
+    val bag = fetchBagV0()
+    val x = bag.data / "x"
+
+    x.toJava shouldNot exist
+
+    inside(bag.replaceFetchItemWithFile(_ / "x")) {
+      case Success(_) =>
+        x.toJava should exist
+    }
+  }
+
+  it should "fail when the file to be resolved does not occur in the list of fetch files" in {
+    val bag = fetchBagV0()
+
+    inside(bag.replaceFetchItemWithFile(_ / "non-existing-file")) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"path ${ bag.data / "non-existing-file" } does not occur in the list of fetch files"
+    }
+  }
+
+  "replaceFetchItemWithFile by URL" should "resolve a fetch item by url" in {
+    assumeCanConnect(lipsum4URL)
+
+    val bag = fetchBagV0()
+    val url = lipsum4URL
+    val path = lipsum4Dest(bag.data)
+
+    path.toJava shouldNot exist
+
+    inside(bag.replaceFetchItemWithFile(url)) {
+      case Success(_) =>
+        path.toJava should exist
+    }
+  }
+
+  it should "fail when the url does not have a 'http' or 'https' protocol" in {
+    val bag = fetchBagV0()
+    val file = testDir / "test-file.txt" writeText lipsum(2)
+
+    inside(bag.replaceFetchItemWithFile(file.url)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message "url can only have protocol 'http' or 'https'"
+    }
+  }
+
+  it should "fail when the url to be resolved does not occur in the list of fetch files" in {
+    val bag = fetchBagV0()
+
+    inside(bag.replaceFetchItemWithFile(lipsum5URL)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"no such url: $lipsum5URL"
+    }
+  }
+
+  "replaceFetchItemWithFile by FetchItem" should "download the file and put it in the payload" in {
+    assumeCanConnect(lipsum4URL)
+
+    val bag = fetchBagV0()
+    val x = bag.data / "x"
+
+    x.toJava shouldNot exist
+
+    inside(bag.replaceFetchItemWithFile(FetchItem(lipsum4URL, 12L, x))) {
+      case Success(_) =>
+        x.toJava should exist
+    }
+  }
+
+  it should "create the subdirectories that are necessary for placing the file in its proper place" in {
+    assumeCanConnect(lipsum1URL)
+
+    val bag = fetchBagV0()
+    val subU = bag.data / "sub" / "u"
+
+    subU.toJava shouldNot exist
+    subU.parent.toJava shouldNot exist
+    subU.parent.parent.toJava should exist
+
+    inside(bag.replaceFetchItemWithFile(FetchItem(lipsum1URL, 12L, subU))) {
+      case Success(_) =>
+        subU.toJava should exist
+    }
+  }
+
+  it should "remove the file from the list of fetch files" in {
+    assumeCanConnect(lipsum4URL)
+
+    val bag = fetchBagV0()
+    val x = bag.data / "x"
+
+    bag.fetchFiles.map(_.file) should contain(x)
+
+    inside(bag.replaceFetchItemWithFile(FetchItem(lipsum4URL, 12L, x))) {
+      case Success(resultBag) =>
+        resultBag.fetchFiles.map(_.file) should not contain x
+    }
+  }
+
+  it should "fail when the file to be resolved already exists within the bag" in {
+    val bag = fetchBagV0()
+    val u = (bag.data / "sub" createDirectory()) / "u" writeText lipsum(1)
+
+    u.toJava should exist
+
+    inside(bag.replaceFetchItemWithFile(FetchItem(lipsum1URL, 12L, u))) {
+      case Failure(e: FileAlreadyExistsException) =>
+        e should have message u.toString
+    }
+  }
+
+  it should "fail when the file to be resolved points outside of the be bag/data directory" in {
+    val bag = fetchBagV0()
+    val test = bag / "test"
+    val fetchItem = FetchItem(lipsum4URL, 12L, test)
+
+    bag.locBag.getItemsToFetch.add(fetchItem)
+
+    inside(bag.replaceFetchItemWithFile(fetchItem)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"a fetch file can only point to a location inside the bag/data directory; $test is outside the data directory"
+    }
+  }
+
+  it should "fail when the file to be resolved does not occur in the list of fetch files" in {
+    val bag = fetchBagV0()
+    val test = bag.data / "non-existing-file"
+    val fetchItem = FetchItem(lipsum4URL, 12L, test)
+
+    inside(bag.replaceFetchItemWithFile(fetchItem)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"fetch item $fetchItem does not occur in the list of fetch files"
+    }
+  }
+
+  it should "fail when the URL is not resolvable" in {
+    assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
+
+    val bag = fetchBagV0()
+    val yNew = bag.data / "y-new-file"
+    val fetchItem = FetchItem(new URL("http://y-new-url"), 12L, yNew)
+    bag.locBag.getItemsToFetch.add(fetchItem)
+
+    inside(bag.replaceFetchItemWithFile(fetchItem)) {
+      // it's either one of these exceptions that is thrown
+      case Failure(e: SocketTimeoutException) =>
+        e should have message "connect timed out"
+      case Failure(e: UnknownHostException) =>
+        e should have message "y-new-url"
+    }
+  }
+
+  it should "fail when the checksum of the downloaded file does not match the one listed in the payload manifests" in {
+    assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
+
+    val bag = fetchBagV0()
+    val x = bag.data / "x"
+    val checksum = bag.payloadManifests(ChecksumAlgorithm.SHA1)(x)
+    bag.locBag.getPayLoadManifests.asScala.headOption.value
+      .getFileToChecksumMap
+      .put(x, "invalid-checksum")
+
+    x.toJava shouldNot exist
+
+    val fetchItem = FetchItem(lipsum4URL, 12L, x)
+    inside(bag.replaceFetchItemWithFile(fetchItem)) {
+      case Failure(e: InvalidChecksumException) =>
+        e should have message s"checksum (${ ChecksumAlgorithm.SHA1 }) of the downloaded file was 'invalid-checksum' but should be '$checksum'"
+
+        bag.list.withFilter(_.isDirectory).map(_.name).toList should contain only (
+          "data",
+          "metadata",
+        )
+        bag.fetchFiles should contain (fetchItem)
+        x.toJava shouldNot exist
     }
   }
 
@@ -2082,16 +2403,16 @@ class DansV0BagSpec extends TestSupportFixture
     val bag = multipleManifestsBagV0()
 
     val fetchTxt = bag / "fetch.txt"
-    val fetchItem1 = FetchItem(lipsum1URL, 12L, bag.data / "some-file1.txt")
-    val fetchItem2 = FetchItem(lipsum2URL, 13L, bag.data / "some-file2.txt")
+    val fetchItem1 = FetchItem(lipsum1URL, lipsum1Size, bag.data / "some-file1.txt")
+    val fetchItem2 = FetchItem(lipsum2URL, lipsum2Size, bag.data / "some-file2.txt")
 
     // initial assumptions
     bag.fetchFiles shouldBe empty
     fetchTxt.toJava shouldNot exist
 
     // changes + save
-    bag.addFetchFile(lipsum1URL, 12L, _ / "some-file1.txt")
-      .flatMap(_.addFetchFile(lipsum2URL, 13L, _ / "some-file2.txt"))
+    bag.addFetchItem(lipsum1URL, _ / "some-file1.txt")
+      .flatMap(_.addFetchItem(lipsum2URL, _ / "some-file2.txt"))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -2114,7 +2435,7 @@ class DansV0BagSpec extends TestSupportFixture
     )
   }
 
-  it should "save fetch.txt when there were already fetch files in the bag" ignore { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/117
+  it should "save fetch.txt when there were already fetch files in the bag" in pendingUntilFixed { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/117
     assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
 
     val bag = fetchBagV0()
@@ -2142,7 +2463,7 @@ class DansV0BagSpec extends TestSupportFixture
     )
 
     // changes + save
-    bag.addFetchFile(newFetchItem.url, 12L, _ / "some-file1.txt")
+    bag.addFetchItem(newFetchItem.url, _ / "some-file1.txt")
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -2186,7 +2507,7 @@ class DansV0BagSpec extends TestSupportFixture
     (bag / "manifest-sha256.txt").contentAsString should not include s"$lipsum5Sha256  ${ bag.baseDir.relativize(newFetchItem.file) }"
 
     // changes + save
-    bag.addFetchFile(newFetchItem.url, 12L, _ / "some-file.txt")
+    bag.addFetchItem(newFetchItem.url, _ / "some-file.txt")
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -2220,7 +2541,7 @@ class DansV0BagSpec extends TestSupportFixture
     (bag / "tagmanifest-sha256.txt").contentAsString should not include "fetch.txt"
 
     // changes + save
-    bag.addFetchFile(newFetchItem.url, 12L, _ / "some-file.txt")
+    bag.addFetchItem(newFetchItem.url, _ / "some-file.txt")
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -2264,10 +2585,10 @@ class DansV0BagSpec extends TestSupportFixture
     )
 
     // changes + save
-    bag.removeFetchByURL(existingFetchItem1.url)
-      .flatMap(_.removeFetchByURL(existingFetchItem2.url))
-      .flatMap(_.removeFetchByURL(existingFetchItem3.url))
-      .flatMap(_.removeFetchByURL(existingFetchItem4.url))
+    bag.removeFetchItem(existingFetchItem1.url)
+      .flatMap(_.removeFetchItem(existingFetchItem2.url))
+      .flatMap(_.removeFetchItem(existingFetchItem3.url))
+      .flatMap(_.removeFetchItem(existingFetchItem4.url))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
