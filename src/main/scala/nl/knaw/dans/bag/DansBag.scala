@@ -392,6 +392,8 @@ trait DansBag {
    *   - data/ directory is present
    *   - at least one payload manifest exists
    *   - all fetch items are present in the bag
+   *   - all files in every payload manifest must be present
+   *   - all files in every tag manifest must be present
    *   - (>= V1.0 bag) all files in the payload directory are listed in all payload manifests
    *   - (< V1.0 bag) all files in the payload directory are listed in at least one payload manifest
    *
@@ -404,10 +406,14 @@ trait DansBag {
    * Verifies if a bag is valid.
    * According to the BagIt v16 specs, a bag is valid when:
    *   - the bag is complete
-   *   - Every checksum in every payload manifest has been successfully verified against the
-   *     contents of the corresponding file.
-   *   - Every checksum in every tag manifest has been successfully verified against the
-   *   contents of the corresponding file.
+   *   - every checksum in every payload manifest has been successfully verified against the
+   * contents of the corresponding file
+   *   - every checksum in every tag manifest has been successfully verified against the
+   * contents of the corresponding file
+   *
+   * Due to calculating the checksums for all files, this method may take some time to complete and
+   * return. It is therefore strongly advised to wrap a call to this method in a `Promise`/`Future`,
+   * `Observable` or any other desired data structure that deals with latency in a proper way.
    *
    * @return either `Unit` (if the bag is valid) or `String` (containing the error message if
    *         the bag is not valid)
