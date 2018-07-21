@@ -522,6 +522,11 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
     }
   }
 
+  /**
+   * @inheritdoc
+   */
+  override def isVirtuallyValid: Either[String, Unit] = ???
+
   protected def openConnection(url: URL): ManagedResource[URLConnection] = {
     url.openConnection() match {
       case conn: HttpURLConnection =>
