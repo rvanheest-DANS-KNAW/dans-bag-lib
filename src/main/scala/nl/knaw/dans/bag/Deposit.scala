@@ -336,6 +336,11 @@ class Deposit private(val baseDir: File,
     withDepositProperties(newProperties)
   }
 
+  /**
+   * Most methods in this library only manipulate the Bag and Deposit in memory.
+   * Saves the in-memory deposit to the file system, like calling flush() in a Stream. It writes all the bag-files and the deposit.properties.
+   * @return
+   */
   def save(): Try[Unit] = {
     for {
       _ <- bag.save()
@@ -351,6 +356,18 @@ object Deposit {
 
   val depositPropertiesName = "deposit.properties"
 
+  /**
+   * Creates a new Deposit with an empty Bag inside.
+   *
+   * @param baseDir the directory for the new Deposit
+   * @param algorithms The algorithms with which the checksums for the (payload/tag) files are calculated. if none provided SHA1 is used.
+   * @param bagInfo The entries to be added to `bag-info.txt`
+   * @param state The state to be set in the deposit.properties' state.label
+   * @param depositor The depositor to be set in the deposit.properties' depositor.userId
+   * @param bagStore The bagId for the bag-dir in this Deposit
+   * @return if successful, returns a `nl.knaw.dans.bag.Deposit` object representing the deposit located at `baseDir`
+   *         else returns an exception
+   */
   def empty(baseDir: File,
             algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
             bagInfo: Map[String, Seq[String]] = Map.empty,
@@ -367,6 +384,21 @@ object Deposit {
       } yield new Deposit(baseDir, bag, properties)
   }
 
+  //TODO wouldn't it be better to be able to provide the payloadDir and a baseDir for the Deposit separately?
+  /**
+   * Creates a new Deposit, as a parent-directory to the `payloadDir`, moving the files in the
+   * `payloadDir` to a Bag in the Deposit.
+   *
+   * @param payloadDir the directory containing the payload files for the bag. Here the Deposit will
+   *                   be created
+   * @param algorithms The algorithms with which the checksums for the (payload/tag) files are calculated. if none provided SHA1 is used.
+   * @param bagInfo The entries to be added to `bag-info.txt`
+   * @param state The state to be set in the deposit.properties' state.label
+   * @param depositor The depositor to be set in the deposit.properties' depositor.userId
+   * @param bagStore The bagId for the bag-dir in this Deposit
+   * @return if successful, returns a `nl.knaw.dans.bag.Deposit` object representing the deposit located at `payloadDir`
+   *         else returns an exception
+   */
   def createFromData(payloadDir: File,
                      algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
                      bagInfo: Map[String, Seq[String]] = Map.empty,
@@ -385,6 +417,12 @@ object Deposit {
     }
   }
 
+  /**
+   * Reads the `baseDir` as a Deposit
+   * @param baseDir The directory containing the deposit
+   * @return if successful, returns a `nl.knaw.dans.bag.Deposit` object representing the deposit located at `baseDir`
+   *         else returns an exception
+   */
   def read(baseDir: File): Try[Deposit] = {
     for {
       bagDir <- findBagDir(baseDir)
@@ -393,6 +431,11 @@ object Deposit {
     } yield new Deposit(baseDir, bag, properties)
   }
 
+  /**
+   * Returns the `baseDir` of the Deposit object
+   * @param deposit
+   * @return returns the `baseDir` of the Deposit object
+   */
   implicit def depositAsFile(deposit: Deposit): File = deposit.baseDir
 
   private def moveBag(payloadDir: File, bagId: UUID): Try[File] = Try {
