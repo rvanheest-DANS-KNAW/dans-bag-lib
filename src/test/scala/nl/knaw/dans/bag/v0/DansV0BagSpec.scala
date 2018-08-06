@@ -2885,6 +2885,34 @@ class DansV0BagSpec extends TestSupportFixture
     bag.isComplete.left.value shouldBe s"Fetch item [$lipsum1URL 12 ${ bag.data / "sub" / "u" }] has not been fetched!"
   }
 
+  it should "fail when not all files in the payload manifests are present" in {
+    val bag = simpleBagV0()
+    val x = bag.data / "x"
+
+    forEvery(bag.payloadManifests) {
+      case (_, manifest) =>
+        manifest should contain key x
+    }
+
+    x.delete()
+
+    bag.isComplete.left.value shouldBe s"Manifest(s) contains file(s) [$x] but they don't exist!"
+  }
+
+  it should "fail when not all files in the tag manifests are present" in {
+    val bag = simpleBagV0()
+    val bagInfo = bag / "bag-info.txt"
+
+    forEvery(bag.tagManifests) {
+      case (_, manifest) =>
+        manifest should contain key bagInfo
+    }
+
+    bagInfo.delete()
+
+    bag.isComplete.left.value shouldBe s"Manifest(s) contains file(s) [$bagInfo] but they don't exist!"
+  }
+
   it should "fail when not all files are listed in all payload manifests" in {
     val bagDir = multipleManifestsBagDirV0
     bagDir / "manifest-sha1.txt" writeText ""
@@ -2992,6 +3020,34 @@ class DansV0BagSpec extends TestSupportFixture
     val bag = fetchBagV0()
 
     bag.isValid.left.value shouldBe s"Fetch item [$lipsum1URL 12 ${ bag.data / "sub" / "u" }] has not been fetched!"
+  }
+
+  it should "fail when not all files in the payload manifests are present" in {
+    val bag = simpleBagV0()
+    val x = bag.data / "x"
+
+    forEvery(bag.payloadManifests) {
+      case (_, manifest) =>
+        manifest should contain key x
+    }
+
+    x.delete()
+
+    bag.isValid.left.value shouldBe s"Manifest(s) contains file(s) [$x] but they don't exist!"
+  }
+
+  it should "fail when not all files in the tag manifests are present" in {
+    val bag = simpleBagV0()
+    val bagInfo = bag / "bag-info.txt"
+
+    forEvery(bag.tagManifests) {
+      case (_, manifest) =>
+        manifest should contain key bagInfo
+    }
+
+    bagInfo.delete()
+
+    bag.isValid.left.value shouldBe s"Manifest(s) contains file(s) [$bagInfo] but they don't exist!"
   }
 
   it should "fail when not all files are listed in all payload manifests" in {
