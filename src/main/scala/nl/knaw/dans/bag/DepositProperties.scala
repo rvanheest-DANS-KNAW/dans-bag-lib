@@ -39,11 +39,11 @@ case class DepositProperties(creation: Creation = Creation(),
                              springfield: Springfield = Springfield(),
                              staged: Staged = Staged()) {
 
-  //TODO shouldn't this always be 'deposit.properties'? in the current Deposit.baseDir?
   /**
    * Writes the DepositProperties to `file` on the filesystem
-   * @param file
-   * @return
+   * @param file the file-location to serialize the properties to
+   * @return `scala.util.Success` if the save was performed successfully,
+   *         `scala.util.Failure` otherwise
    */
   def save(file: File): Try[Unit] = Try {
     new PropertiesConfiguration {
@@ -100,13 +100,13 @@ object DepositProperties {
   // @formatter:on
 
   /**
-   * Creates an almost empty DepositProperties object, with only mandatory properties set
+   * Creates a DepositProperties object, with only mandatory properties set
    * @param state the `State` to be set
    * @param depositor the accountname of the depositor
    * @param bagStore the bagId to be used for this deposit
    * @return returns a new DepositProperties
    */
-  def empty(state: State, depositor: Depositor, bagStore: BagStore): DepositProperties = {
+  def from(state: State, depositor: Depositor, bagStore: BagStore): DepositProperties = {
     DepositProperties(
       state = state,
       depositor = depositor,
@@ -118,7 +118,7 @@ object DepositProperties {
    * Reads a File as a deposit.properties file
    * @param propertiesFile
    * @return if successful it returns the DepositProperties representing the `propertiesFile`,
-   *         else an exception
+   *         else a Failure with a NoSuchFileException is returned
    */
   def read(propertiesFile: File): Try[DepositProperties] = {
     if (propertiesFile.exists && propertiesFile.isRegularFile)
@@ -133,10 +133,10 @@ object DepositProperties {
   }
 
   /**
-   * Loads a new DepositProperties object with the corresponding elements form the PropertiesConfiguration
-   * @param properties
+   * Loads a new DepositProperties object with the corresponding elements from the PropertiesConfiguration
+   * @param properties the PropertiesConfiguration containing all mandatory deposit properties
    * @return if successful it returns a new DepositProperties representing the provided `properties`
-   *         else an exception
+   *         else a Failure with a NoSuchElementException if not all deposit properties were present
    */
   def load(properties: PropertiesConfiguration): Try[DepositProperties] = Try {
     DepositProperties(

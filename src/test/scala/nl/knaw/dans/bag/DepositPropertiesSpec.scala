@@ -32,7 +32,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
     val depositor = Depositor("myuser")
     val bagId = UUID.fromString("1c2f78a1-26b8-4a40-a873-1073b9f3a56a")
     val bagStore = new BagStore(bagId, archived = false)
-    val props = DepositProperties.empty(state, depositor, bagStore)
+    val props = DepositProperties.from(state, depositor, bagStore)
 
     props.creation.timestamp.toString(ISODateTimeFormat.dateTime()) shouldBe fixedDateTimeNow.toString(ISODateTimeFormat.dateTime())
 
