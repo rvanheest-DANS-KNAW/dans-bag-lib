@@ -655,11 +655,6 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
     }
   }
 
-  /**
-   * @inheritdoc
-   */
-  override def isVirtuallyValid: Either[String, Unit] = ???
-
   protected def validateURL(url: URL): Unit = {
     if (url.getProtocol != "http" && url.getProtocol != "https")
       throw new IllegalArgumentException("url can only have protocol 'http' or 'https'")
