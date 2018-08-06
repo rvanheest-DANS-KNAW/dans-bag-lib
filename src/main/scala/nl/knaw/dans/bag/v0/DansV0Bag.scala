@@ -26,6 +26,7 @@ import gov.loc.repository.bagit.creator.BagCreator
 import gov.loc.repository.bagit.domain.{ Version, Bag => LocBag, Manifest => LocManifest, Metadata => LocMetadata, FetchItem => LocFetchItem }
 import gov.loc.repository.bagit.reader.BagReader
 import gov.loc.repository.bagit.util.PathUtils
+import gov.loc.repository.bagit.verify.FileCountAndTotalSizeVistor
 import gov.loc.repository.bagit.writer.{ BagitFileWriter, FetchWriter, ManifestWriter, MetadataWriter }
 import nl.knaw.dans.bag.ChecksumAlgorithm.{ ChecksumAlgorithm, locDeconverter }
 import nl.knaw.dans.bag.{ ChecksumAlgorithm, DansBag, FetchItem, RelativePath, betterFileToPath }
@@ -606,9 +607,10 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
 
     // save bag-info.txt file
     locBag.getMetadata.upsertPayloadOxum(PathUtils.generatePayloadOxum(data))
-    locBag.getMetadata.remove("Bagging-Date") //remove the old bagging date if it exists so that there is only one
-    locBag.getMetadata.add("Bagging-Date", DateTime.now().toString(ISODateTimeFormat.yearMonthDay()))
-    // TODO calculate correct Bag-Size property
+    locBag.getMetadata.remove(DansV0Bag.BAGGING_DATE_KEY) //remove the old bagging date if it exists so that there is only one
+    locBag.getMetadata.add(DansV0Bag.BAGGING_DATE_KEY, DateTime.now().toString(ISODateTimeFormat.yearMonthDay()))
+    locBag.getMetadata.remove(DansV0Bag.BAG_SIZE_KEY) // remove the old bag size if it exists so that there is only one
+    locBag.getMetadata.add(DansV0Bag.BAG_SIZE_KEY, formatSize(calculateSizeOfPath(data)))
     MetadataWriter.writeBagMetadata(locBag.getMetadata, bagitVersion, baseDir, fileEncoding)
 
     // save fetch.txt file
@@ -797,6 +799,36 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
         .toSet.asJava
     }
   }
+
+  private def calculateSizeOfPath(dir: File): Long = {
+    val visitor = new FileCountAndTotalSizeVistor
+    jFiles.walkFileTree(dir.path, visitor)
+    visitor.getTotalSize
+  }
+
+  private val kb: Double = Math.pow(2, 10)
+  private val mb: Double = Math.pow(2, 20)
+  private val gb: Double = Math.pow(2, 30)
+  private val tb: Double = Math.pow(2, 40)
+
+  private def formatSize(octets: Long): String = {
+    def approximate(octets: Long): (String, Double) = {
+      octets match {
+        case o if o < mb => ("KB", kb)
+        case o if o < gb => ("MB", mb)
+        case o if o < tb => ("GB", gb)
+        case _ => ("TB", tb)
+      }
+    }
+
+    val (unit, div) = approximate(octets)
+    val size = octets / div
+    val sizeString = f"$size%1.1f"
+    val string = if (sizeString endsWith ".0") size.toInt.toString
+                 else sizeString
+
+    s"$string $unit"
+  }
 }
 
 object DansV0Bag {
@@ -806,6 +838,8 @@ object DansV0Bag {
   val dateTimeFormatter: DateTimeFormatter = ISODateTimeFormat.dateTime()
   val IS_VERSION_OF_KEY = "Is-Version-Of"
   val EASY_USER_ACCOUNT_KEY = "EASY-User-Account"
+  private val BAGGING_DATE_KEY = "Bagging-Date"
+  private val BAG_SIZE_KEY = "Bag-Size"
 
   /**
    * Create an empty bag at the given `baseDir`. Based on the given `algorithms`, (empty)
