@@ -436,7 +436,7 @@ object Deposit {
 
   /**
    * Returns the `baseDir` of the Deposit object
-   * @param deposit
+   * @param deposit the deposit to extract the `baseDir` from
    * @return returns the `baseDir` of the Deposit object
    */
   implicit def depositAsFile(deposit: Deposit): File = deposit.baseDir
