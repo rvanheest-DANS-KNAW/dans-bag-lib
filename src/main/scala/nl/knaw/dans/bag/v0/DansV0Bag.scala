@@ -210,8 +210,9 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def fetchFiles: Seq[FetchItem] = locBag.getItemsToFetch.asScala.map(
-    fetch => fetch: FetchItem)
+  override def fetchFiles: Seq[FetchItem] = {
+    locBag.getItemsToFetch.asScala.map(fetch => fetch: FetchItem)
+  }
 
   /**
    * @inheritdoc
