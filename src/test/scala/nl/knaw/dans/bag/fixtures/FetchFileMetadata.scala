@@ -17,11 +17,17 @@ package nl.knaw.dans.bag.fixtures
 
 import java.net.URL
 
+import better.files.File
 import nl.knaw.dans.bag.RelativePath
 
 trait FetchFileMetadata {
   this: TestSupportFixture =>
 
+  def findFile(pathRelativeToTestResources: String): File = {
+    File(getClass.getResource(pathRelativeToTestResources))
+  }
+
+  val lipsum1File: File = findFile("/fetch-files/lipsum1.txt")
   val lipsum1URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum1.txt")
@@ -33,6 +39,7 @@ trait FetchFileMetadata {
     "19d5cdbb6f0f84be9145643ac793dd63eaee407e51d6dacd5ba3c1d8f6fe07da"
   val lipsum1Size: Long = 485L
 
+  val lipsum2File: File = findFile("/fetch-files/lipsum2.txt")
   val lipsum2URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum2.txt")
@@ -44,6 +51,7 @@ trait FetchFileMetadata {
     "d4086396119e2ebaadd79548d623d8dfa350f854af6271da68311abb1c0e73e8"
   val lipsum2Size: Long = 989L
 
+  val lipsum3File: File = findFile("/fetch-files/lipsum3.txt")
   val lipsum3URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum3.txt")
@@ -55,6 +63,7 @@ trait FetchFileMetadata {
     "647c11784b75eed3a20ac60efda146f040daeaa3837fa3aba9a2b94e30da0965"
   val lipsum3Size: Long = 1641L
 
+  val lipsum4File: File = findFile("/fetch-files/lipsum4.txt")
   val lipsum4URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum4.txt")
@@ -66,6 +75,7 @@ trait FetchFileMetadata {
     "e7e3639cba8c3a864fea8a6f58fc0a37310b3f4550466d8ff2c9ba0835bb3231"
   val lipsum4Size: Long = 2095L
 
+  val lipsum5File: File = findFile("/fetch-files/lipsum5.txt")
   val lipsum5URL: URL = new URL("https://raw.githubusercontent.com/rvanheest-DANS-KNAW/" +
     "dans-bag-lib/c8681a5932e4081dfec95680abefc9a07740a97a/src/test/resources/fetch-files/" +
     "lipsum5.txt")
