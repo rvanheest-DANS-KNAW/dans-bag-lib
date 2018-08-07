@@ -336,6 +336,15 @@ class Deposit private(val baseDir: File,
     withDepositProperties(newProperties)
   }
 
+  /**
+   * Saves the in-memory deposit to the file system. It saves all the bag-it files by calling
+   * `DansBag.save()` and the deposit.properties by calling `DepositProperties.save()`.
+   * As most methods in this library only manipulate the bag-it files and Deposit in memory, a call
+   * to `save()` is necessary to serialize the `nl.knaw.dans.bag.Deposit`.
+   *
+   * @return `scala.util.Success` if the save was performed successfully,
+   *         `scala.util.Failure` otherwise
+   */
   def save(): Try[Unit] = {
     for {
       _ <- bag.save()
@@ -351,22 +360,52 @@ object Deposit {
 
   val depositPropertiesName = "deposit.properties"
 
-  def empty(baseDir: File,
-            algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
-            bagInfo: Map[String, Seq[String]] = Map.empty,
-            state: State,
-            depositor: Depositor,
-            bagStore: BagStore): Try[Deposit] = {
+  /**
+   * Creates a new `nl.knaw.dans.bag.Deposit` with an empty `nl.knaw.dans.bag.DansBag` inside.
+   *
+   * @param baseDir    the directory for the new Deposit
+   * @param algorithms the algorithms with which the checksums for the (payload/tag) files are
+   *                   calculated. If none are provided, SHA1 is used.
+   * @param bagInfo    the entries to be added to `bag-info.txt`
+   * @param state      the state to be set in the `deposit.properties`' state.label
+   * @param depositor  the depositor to be set in the `deposit.properties`' `depositor.userId`
+   * @param bagStore   the bagId for the `bag-dir` in this `nl.knaw.dans.bag.Deposit`
+   * @return if successful, returns a `nl.knaw.dans.bag.Deposit` object representing the deposit
+   *         located at `baseDir`, else returns an exception
+   */
+  def from(baseDir: File,
+           algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
+           bagInfo: Map[String, Seq[String]] = Map.empty,
+           state: State,
+           depositor: Depositor,
+           bagStore: BagStore): Try[Deposit] = {
     if (baseDir.exists)
       Failure(new FileAlreadyExistsException(baseDir.toString))
     else
       for {
         bag <- DansBag.empty(baseDir / bagStore.bagId.toString, algorithms, bagInfo)
-        properties = DepositProperties.empty(state, depositor, bagStore)
+        properties = DepositProperties.from(state, depositor, bagStore)
         _ <- properties.save(depositProperties(baseDir))
       } yield new Deposit(baseDir, bag, properties)
   }
 
+  /**
+   * Creates a new Deposit, as a parent-directory to the `payloadDir`. A new `DansBag` will be
+   * created in the `Deposit`, with the bag-it files, and the data files in the `data/` directory.
+   * However, no `metadata/` files will be created. These have to be added separately.
+   *
+   * @param payloadDir the directory containing the payload (data) files for the bag. The `Deposit`
+   *                   will be created here, and the payload files will be moved to the `data/`
+   *                   directory in the new `DansBag`
+   * @param algorithms the algorithms with which the checksums for the (payload/tag) files are
+   *                   calculated. If none provided SHA1 is used.
+   * @param bagInfo    the entries to be added to `bag-info.txt`
+   * @param state      the state to be set in the deposit.properties' state.label
+   * @param depositor  the depositor to be set in the deposit.properties' depositor.userId
+   * @param bagStore   the bagId for the bag-dir in this Deposit
+   * @return if successful, returns a `nl.knaw.dans.bag.Deposit` object representing the deposit
+   *         located at `payloadDir` else returns an exception
+   */
   def createFromData(payloadDir: File,
                      algorithms: Set[ChecksumAlgorithm] = Set(ChecksumAlgorithm.SHA1),
                      bagInfo: Map[String, Seq[String]] = Map.empty,
@@ -379,12 +418,19 @@ object Deposit {
       for {
         bagDir <- moveBag(payloadDir, bagStore.bagId)
         bag <- DansBag.createFromData(bagDir, algorithms, bagInfo)
-        properties = DepositProperties.empty(state, depositor, bagStore)
+        properties = DepositProperties.from(state, depositor, bagStore)
         _ <- properties.save(depositProperties(payloadDir))
       } yield new Deposit(payloadDir, bag, properties)
     }
   }
 
+  /**
+   * Reads the `baseDir` as a Deposit.
+   *
+   * @param baseDir the directory containing the deposit
+   * @return if successful, returns a `nl.knaw.dans.bag.Deposit` object representing the deposit
+   *         located at `baseDir` else returns an exception
+   */
   def read(baseDir: File): Try[Deposit] = {
     for {
       bagDir <- findBagDir(baseDir)
@@ -393,6 +439,12 @@ object Deposit {
     } yield new Deposit(baseDir, bag, properties)
   }
 
+  /**
+   * Returns the `baseDir` of the Deposit object
+   *
+   * @param deposit the deposit to extract the `baseDir` from
+   * @return returns the `baseDir` of the Deposit object
+   */
   implicit def depositAsFile(deposit: Deposit): File = deposit.baseDir
 
   private def moveBag(payloadDir: File, bagId: UUID): Try[File] = Try {

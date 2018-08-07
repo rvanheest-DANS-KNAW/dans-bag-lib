@@ -19,7 +19,7 @@ import java.nio.file.NoSuchFileException
 import java.util.UUID
 
 import better.files.File
-import nl.knaw.dans.bag.DepositProperties._
+import nl.knaw.dans.bag.DepositProperties.{ stateDescription, _ }
 import nl.knaw.dans.bag.SpringfieldPlayMode.SpringfieldPlayMode
 import nl.knaw.dans.bag.StageState.StageState
 import nl.knaw.dans.bag.StateLabel.StateLabel
@@ -39,6 +39,13 @@ case class DepositProperties(creation: Creation = Creation(),
                              springfield: Springfield = Springfield(),
                              staged: Staged = Staged()) {
 
+  /**
+   * Writes the `DepositProperties` to `file` on the filesystem.
+   *
+   * @param file the file location to serialize the properties to
+   * @return `scala.util.Success` if the save was performed successfully,
+   *         `scala.util.Failure` otherwise
+   */
   def save(file: File): Try[Unit] = Try {
     new PropertiesConfiguration {
       setDelimiterParsingDisabled(true)
@@ -93,7 +100,15 @@ object DepositProperties {
   val stagedState           = "staged.state"
   // @formatter:on
 
-  def empty(state: State, depositor: Depositor, bagStore: BagStore): DepositProperties = {
+  /**
+   * Creates a `DepositProperties` object, with only the mandatory properties set.
+   *
+   * @param state     the `State` to be set
+   * @param depositor the accountname of the depositor
+   * @param bagStore  the bagId to be used for this deposit
+   * @return a new `DepositProperties`
+   */
+  def from(state: State, depositor: Depositor, bagStore: BagStore): DepositProperties = {
     DepositProperties(
       state = state,
       depositor = depositor,
@@ -101,6 +116,13 @@ object DepositProperties {
     )
   }
 
+  /**
+   * Reads a `File` as a `deposit.properties` file.
+   *
+   * @param propertiesFile the file to be converted to a `DepositProperties`
+   * @return if successful the `DepositProperties` representing the `propertiesFile`,
+   *         else a Failure with a NoSuchFileException
+   */
   def read(propertiesFile: File): Try[DepositProperties] = {
     if (propertiesFile.exists && propertiesFile.isRegularFile)
       Try {
@@ -113,31 +135,51 @@ object DepositProperties {
       Failure(new NoSuchFileException(s"$propertiesFile does not exist or isn't a file"))
   }
 
+  /**
+   * Loads a new `DepositProperties` object with the corresponding elements from the
+   * `PropertiesConfiguration`. `properties` should at least contain all mandatory properties.
+   *
+   * @param properties the `PropertiesConfiguration` containing at least all mandatory deposit properties
+   * @return if successful a new `DepositProperties` representing the provided `properties`
+   *         else a `Failure` with a `NoSuchElementException` if not all deposit properties were present
+   */
   def load(properties: PropertiesConfiguration): Try[DepositProperties] = Try {
+    val creationTimestampValue = properties.getString(creationTimestamp)
+    val stateLabelValue = properties.getString(stateLabel)
+    val stateDescriptionValue = properties.getString(stateDescription)
+    val depositorUserIdValue = properties.getString(depositorUserId)
+    val bagStoreBagIdValue = properties.getString(bagStoreBagId)
+
+    require(creationTimestampValue != null, s"could not find mandatory field '$creationTimestamp'")
+    require(stateLabelValue != null, s"could not find mandatory field '$stateLabel'")
+    require(stateDescriptionValue != null, s"could not find mandatory field '$stateDescription'")
+    require(depositorUserIdValue != null, s"could not find mandatory field '$depositorUserId'")
+    require(bagStoreBagIdValue != null, s"could not find mandatory field '$bagStoreBagId'")
+
     DepositProperties(
       creation = new Creation(
-        timestamp = properties.getString(creationTimestamp)
+        timestamp = creationTimestampValue
       ),
       state = new State(
-        label = properties.getString(stateLabel),
-        description = properties.getString(stateDescription)
+        label = stateLabelValue,
+        description = stateDescriptionValue
       ),
       depositor = Depositor(
-        userId = properties.getString(depositorUserId)
+        userId = depositorUserIdValue
       ),
       bagStore = new BagStore(
-        bagId = properties.getString(bagStoreBagId),
+        bagId = bagStoreBagIdValue,
         archived = properties.getString(bagStoreArchived)
       ),
-      identifier = Identifier(
-        doi = Option(properties.getString(doiIdentifier))
+      identifier = new Identifier(
+        doi = properties.getString(doiIdentifier)
       ),
       curation = new Curation(
-        userId = Option(properties.getString(dataManagerUserId)),
-        email = Option(properties.getString(datamanagerEmail)),
-        isNewVersion = Option(properties.getString(isNewVersion)),
-        required = Option(properties.getString(curationRequired)),
-        performed = Option(properties.getString(curationPerformed))
+        userId = properties.getString(dataManagerUserId),
+        email = properties.getString(datamanagerEmail),
+        isNewVersion = properties.getString(isNewVersion),
+        required = properties.getString(curationRequired),
+        performed = properties.getString(curationPerformed)
       ),
       springfield = new Springfield(
         domain = properties.getString(springfieldDomain),
@@ -181,14 +223,14 @@ case class State(label: StateLabel, description: String) {
 
 case class Depositor(userId: String)
 
-case class Identifier(doi: Option[String] = None)
+case class Identifier(doi: Option[String] = None) {
+  def this(doi: String) = {
+    this(Option(doi))
+  }
+}
 
 case class BagStore(bagId: UUID,
                     archived: Option[Boolean] = None) {
-  def this(bagId: UUID, archived: Boolean) = {
-    this(bagId, Option(archived))
-  }
-
   def this(bagId: String, archived: String) = {
     this(UUID.fromString(bagId), Option(archived).map(BooleanUtils.toBoolean))
   }
@@ -205,15 +247,15 @@ case class Curation(dataManager: DataManager = DataManager(),
                     isNewVersion: Option[Boolean] = Option.empty,
                     required: Option[Boolean] = Option.empty,
                     performed: Option[Boolean] = Option.empty) {
-  def this(userId: Option[String],
-           email: Option[String],
-           isNewVersion: Option[String],
-           required: Option[String],
-           performed: Option[String]) = {
-    this(DataManager(userId, email),
-      isNewVersion.map(BooleanUtils.toBoolean),
-      required.map(BooleanUtils.toBoolean),
-      performed.map(BooleanUtils.toBoolean),
+  def this(userId: String,
+           email: String,
+           isNewVersion: String,
+           required: String,
+           performed: String) = {
+    this(DataManager(Option(userId), Option(email)),
+      Option(isNewVersion).map(BooleanUtils.toBoolean),
+      Option(required).map(BooleanUtils.toBoolean),
+      Option(performed).map(BooleanUtils.toBoolean),
     )
   }
 

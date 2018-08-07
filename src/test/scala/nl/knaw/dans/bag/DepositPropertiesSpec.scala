@@ -27,12 +27,12 @@ import scala.util.Failure
 
 class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport with TestDeposits with FixDateTimeNow {
 
-  "empty" should "create a deposit.properties object containing only the minimal required properties" in {
+  "from" should "create a deposit.properties object containing only the minimal required properties" in {
     val state = State(StateLabel.DRAFT, "this deposit is still in draft")
     val depositor = Depositor("myuser")
     val bagId = UUID.fromString("1c2f78a1-26b8-4a40-a873-1073b9f3a56a")
-    val bagStore = new BagStore(bagId, archived = false)
-    val props = DepositProperties.empty(state, depositor, bagStore)
+    val bagStore = BagStore(bagId, archived = Option(false))
+    val props = DepositProperties.from(state, depositor, bagStore)
 
     props.creation.timestamp.toString(ISODateTimeFormat.dateTime()) shouldBe fixedDateTimeNow.toString(ISODateTimeFormat.dateTime())
 
@@ -119,7 +119,7 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
     props.staged.state shouldBe empty
   }
 
-  it should "fail if the file does not exist" in {
+  it should "fail when the file does not exist" in {
     val file = simpleDepositDirV0 / "non-existing-deposit.properties"
     inside(DepositProperties.read(file)) {
       case Failure(e: NoSuchFileException) =>
@@ -127,11 +127,26 @@ class DepositPropertiesSpec extends TestSupportFixture with FileSystemSupport wi
     }
   }
 
-  it should "fail if the given better.files.File is not a regular file" in {
+  it should "fail when the given better.files.File is not a regular file" in {
     val file = simpleDepositDirV0
     inside(DepositProperties.read(file)) {
       case Failure(e: NoSuchFileException) =>
         e should have message s"$file does not exist or isn't a file"
+    }
+  }
+
+  it should "fail when deposit.properties does not contain the minimal required properties" in {
+    // state.description and state.label are missing
+    val file = (testDir / "deposit.properties").write(
+      """creation.timestamp=2018-05-25T20:08:56.210+02:00
+        |depositor.userId=myuser
+        |bag-store.bag-id=1c2f78a1-26b8-4a40-a873-1073b9f3a56a
+      """.stripMargin
+    )
+
+    inside(DepositProperties.read(file)) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message "requirement failed: could not find mandatory field 'state.label'"
     }
   }
 

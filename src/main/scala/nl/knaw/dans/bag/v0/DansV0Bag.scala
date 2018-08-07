@@ -220,7 +220,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
 
     if (destinationPath.exists)
       throw new FileAlreadyExistsException(destinationPath.toString(), null, "already exists in payload")
-    if (fetchFiles.find(_.file == destinationPath).isDefined)
+    if (fetchFiles.exists(_.file == destinationPath))
       throw new FileAlreadyExistsException(destinationPath.toString(), null, "already exists in fetch.txt")
     if (!destinationPath.isChildOf(data))
       throw new IllegalArgumentException(s"a fetch file can only point to a location inside the bag/data directory; $destinationPath is outside the data directory")
