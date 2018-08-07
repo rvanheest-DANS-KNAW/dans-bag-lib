@@ -2351,14 +2351,14 @@ class DansV0BagSpec extends TestSupportFixture
     bag.bagInfo should contain only(
       "Payload-Oxum" -> Seq("2592.7"),
       "Bagging-Date" -> Seq(today),
-      "Bag-Size" -> Seq("0.6 KB"),
+      "Bag-Size" -> Seq("2.5 KB"),
       "Created" -> Seq("2017-01-16T14:35:00.888+01:00"),
       "Is-Version-Of" -> Seq(uuid),
     )
     bag.baseDir should containInBagInfoOnly(
       "Payload-Oxum" -> Seq("2592.7"),
       "Bagging-Date" -> Seq(today),
-      "Bag-Size" -> Seq("0.6 KB"),
+      "Bag-Size" -> Seq("2.5 KB"),
       "Created" -> Seq("2017-01-16T14:35:00.888+01:00"),
       "Is-Version-Of" -> Seq(uuid)
     )
