@@ -29,8 +29,8 @@ val baseDir: File = ???
 val deposit = Deposit.read(baseDir)
 ```
 
-In similar fashion a `Deposit` can be created as empty or from an already existing directory containing
-the data files that form the bag's payload.
+In similar fashion a `Deposit` can be created as empty, or from an already existing directory
+containing the data files that form the bag's payload, or from an already existing bag.
 
 ```scala
 import better.files.File
@@ -54,6 +54,12 @@ val depositFromData = Deposit.createFromData(dataDir,
                                              State(StateLabel.DRAFT, "this deposit is in status draft"),
                                              Depositor("my-userId"),
                                              BagStore(UUID.randomUUID()))
+
+val bagDir: File = ???
+val depositFromBag = Deposit.createFromBag(bagDir,
+                                           State(StateLabel.DRAFT, "this deposit is in status draft"),
+                                           Depositor("my-userId"),
+                                           BagStore(UUID.randomUUID()))
 ```
 
 After being read or created, a `Deposit` object can be used to modify the `DepositProperties` and
