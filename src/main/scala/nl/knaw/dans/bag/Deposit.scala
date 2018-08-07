@@ -337,9 +337,10 @@ class Deposit private(val baseDir: File,
   }
 
   /**
-   * Most methods in this library only manipulate the Bag and Deposit in memory.
-   * Saves the in-memory deposit to the file system. It saves all the bag files by calling `DansBag.save()`
+   * Saves the in-memory deposit to the file system. It saves all the bag-it files by calling `DansBag.save()`
    * and the deposit.properties by calling `DepositProperties.save()`.
+   * As most methods in this library only manipulate the bag-it files and Deposit in memory, a call
+   * to `save()` is necessary to serialize the `nl.knaw.dans.bag.Deposit`
    * @return `scala.util.Success` if the save was performed successfully,
    *         `scala.util.Failure` otherwise
    */
@@ -387,13 +388,13 @@ object Deposit {
       } yield new Deposit(baseDir, bag, properties)
   }
 
-  //TODO wouldn't it be better to be able to provide the payloadDir and a baseDir for the Deposit separately?
   /**
-   * Creates a new Deposit, as a parent-directory to the `payloadDir`, moving the files in the
-   * `payloadDir` to a Bag in the Deposit.
+   * Creates a new Deposit, as a parent-directory to the `payloadDir`. A new `DansBag` will be created
+   * in the `Deposit`, with the bag-it files, and the data files in the `data/` directory.
+   * However, no `metadata/` files will be created. These have to be added separately
    *
-   * @param payloadDir the directory containing the payload files for the bag. Here the Deposit will
-   *                   be created
+   * @param payloadDir the directory containing the payload (data) files for the bag. The `Deposit` will
+   *                   be created here, and the payload files will be moved to the `data/` directory in the new `DansBag`
    * @param algorithms The algorithms with which the checksums for the (payload/tag) files are calculated. if none provided SHA1 is used.
    * @param bagInfo The entries to be added to `bag-info.txt`
    * @param state The state to be set in the deposit.properties' state.label
