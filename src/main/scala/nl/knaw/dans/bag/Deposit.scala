@@ -375,14 +375,40 @@ object Deposit {
                      bagStore: BagStore): Try[Deposit] = {
     if (payloadDir.notExists)
       Failure(new NoSuchFileException(payloadDir.toString))
-    else {
+    else
       for {
         bagDir <- moveBag(payloadDir, bagStore.bagId)
         bag <- DansBag.createFromData(bagDir, algorithms, bagInfo)
         properties = DepositProperties.empty(state, depositor, bagStore)
         _ <- properties.save(depositProperties(payloadDir))
       } yield new Deposit(payloadDir, bag, properties)
-    }
+  }
+
+  /**
+   * Create a deposit based on an already existing bag. If the `bagDir` does not exist or does not
+   * represent a valid bag, a `Failure` is returned.
+   *
+   * @param bagDir the directory containing the bag. The `Deposit` will be created here, and the bag
+   *               will be moved to the bag directory within the deposit
+   * @param state the state to be set in the deposit.properties' state.label
+   * @param depositor the depositor to be set in the deposit.properties' depositor.userId
+   * @param bagStore the bagId for the bag-dir in this Deposit
+   * @return if successful, returns a `nl.knaw.dans.bag.Deposit` object representing the deposit
+   *         located at `bagDir`, else returns an exception
+   */
+  def createFromBag(bagDir: File,
+                    state: State,
+                    depositor: Depositor,
+                    bagStore: BagStore): Try[Deposit] = {
+    if (bagDir.notExists)
+      Failure(new NoSuchFileException(bagDir.toString()))
+    else
+      for {
+        newBagDir <- moveBag(bagDir, bagStore.bagId)
+        bag <- DansBag.read(newBagDir)
+        properties = DepositProperties.empty(state, depositor, bagStore)
+        _ <- properties.save(depositProperties(bagDir))
+      } yield new Deposit(bagDir, bag, properties)
   }
 
   def read(baseDir: File): Try[Deposit] = {
