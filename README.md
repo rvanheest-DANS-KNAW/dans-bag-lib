@@ -23,7 +23,7 @@ A deposit can be read using
 
 ```scala
 import better.files.File
-import nl.knaw.dans.bag.v0.Deposit
+import nl.knaw.dans.bag.Deposit
 
 val baseDir: File = ???
 val deposit = Deposit.read(baseDir)
@@ -35,7 +35,7 @@ the data files that form the bag's payload.
 ```scala
 import better.files.File
 import java.util.UUID
-import nl.knaw.dans.bag.v0._
+import nl.knaw.dans.bag._
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 
@@ -70,7 +70,7 @@ In a `Deposit` object, one can access, add and delete these properties using met
 
 ```scala
 import scala.util.Try
-import nl.knaw.dans.bag.v0._
+import nl.knaw.dans.bag._
 
 val deposit: Deposit = ???
 val doi: Option[String] = deposit.doi
@@ -85,7 +85,66 @@ After all mutations are made to the deposit properties, the user must call `.sav
 `Deposit` object in order to write the changes to the deposit on file system.
 
 ### Bag
-TODO
+A bag can be read using
+
+```scala
+import better.files.File
+import nl.knaw.dans.bag.DansBag
+
+val baseDir: File = ???
+val bag = DansBag.read(baseDir)
+```
+
+In similar fashion a `DansBag` can be created as empty or from an already existing directory containing
+the data files that form the bag's payload.
+
+```scala
+import better.files.File
+import nl.knaw.dans.bag.{ DansBag, ChecksumAlgorithm }
+import org.joda.time.DateTime
+import org.joda.time.format.ISODateTimeFormat
+
+val baseDir: File = ???
+val emptyBag = DansBag.empty(baseDir,
+                             Set(ChecksumAlgorithm.SHA1),
+                             Map("Created" -> Seq(DateTime.now().toString(ISODateTimeFormat.dateTime()))))
+
+val dataDir: File = ???
+val bagFromData = DansBag.createFromData(dataDir,
+                                         Set(ChecksumAlgorithm.SHA1),
+                                         Map("Created" -> Seq(DateTime.now().toString(ISODateTimeFormat.dateTime()))))
+```
+
+After being read or created, a `Bag` object can be used to modify and access the data in the bag on
+filesystem. Mutating methods always return either a `Bag` or `Try[Bag]` object, such that mutations
+can be chained. Please note that mutating methods generally do not mutate the bag on filesystem, but
+only the `Bag` object in memory! In order to persist the changes made to a `Bag`, please call `.save()`
+after all mutations have been done.
+
+```scala
+import java.util.UUID
+import better.files.File
+import nl.knaw.dans.bag.{ DansBag, ChecksumAlgorithm }
+
+val baseDir: File = ???
+// using map/flatMap
+DansBag.read(baseDir)
+  .map(_.withIsVersionOf(UUID.fromString("00000000-0000-0000-0000-000000000001")))
+  .map(_.withEasyUserAccount("my-user"))
+  .flatMap(_.addPayloadManifestAlgorithm(ChecksumAlgorithm.SHA512))
+  .flatMap(_.addTagManifestAlgorithm(ChecksumAlgorithm.SHA512))
+  .flatMap(_.save())
+
+// using for-comprehension
+for {
+  bag <- DansBag.read(baseDir)
+  versionedBag = bag.withIsVersionOf(UUID.fromString("00000000-0000-0000-0000-000000000001"))
+  withUser = versionedBag.withEasyUserAccount("my-user")
+  withExtraAlgorithm <- withUser.addPayloadManifestAlgorithm(ChecksumAlgorithm.SHA512)
+  withExtraTagAlgorithm <- withExtraAlgorithm.addTagManifestAlgorithm(ChecksumAlgorithm.SHA512)
+  _ <- withExtraTagAlgorithm.save()
+} yield ()
+```
 
 
 INSTALLATION

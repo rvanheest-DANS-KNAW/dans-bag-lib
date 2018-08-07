@@ -179,7 +179,6 @@ trait DansBag {
    */
   def withEasyUserAccount(userId: String): DansBag
 
-
   /**
    * Removes the entry with key 'EASY-User-Account' from `bag-info.txt`.
    *
