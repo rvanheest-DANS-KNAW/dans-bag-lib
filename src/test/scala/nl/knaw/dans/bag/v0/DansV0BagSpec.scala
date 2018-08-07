@@ -2199,11 +2199,11 @@ class DansV0BagSpec extends TestSupportFixture
     }
   }
 
-  it should "fail when the file to remove is the bag directory itself" in {
+  it should "fail when the file to remove is the bag directory itself" in pendingUntilFixed {
     val bag = simpleBagV0()
 
     bag.toJava should exist
-    //    bag.isChildOf(bag) shouldBe false // TODO why does this actually return true??? - https://github.com/pathikrit/better-files/issues/247
+    bag.isChildOf(bag) shouldBe false // TODO why does this actually return true??? - https://github.com/pathikrit/better-files/issues/247
 
     inside(bag.removeTagFile(identity)) {
       case Failure(e: IllegalArgumentException) =>
