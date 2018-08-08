@@ -4,23 +4,13 @@ cache:
   directories:
   - "$HOME/.m2/repository"
 
-#branches:
-#  only:
-#  - master
-#
-#deploy:
-#  provider: script
-#  script: bash .travis/upload-docs.sh
-#  on:
-#    branch: master
-
 deploy:
   provider: pages
   skip-cleanup: true
   local-dir: target/site/scaladocs
   keep-history: true
   verbose: true
-#  github-token: $GITHUB_TOKEN
+  github-token: $GH_TOKEN
   on:
     branch: master
 
