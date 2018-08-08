@@ -1,2 +1,29 @@
 language: java
 jdk: oraclejdk8
+cache:
+  directories:
+  - "$HOME/.m2/repository"
+
+#branches:
+#  only:
+#  - master
+#
+#deploy:
+#  provider: script
+#  script: bash .travis/upload-docs.sh
+#  on:
+#    branch: master
+
+deploy:
+  provider: pages
+  skip-cleanup: true
+  local-dir: target/site/scaladocs
+  keep-history: true
+  verbose: true
+#  github-token: $GITHUB_TOKEN
+  on:
+    branch: master
+
+env:
+  global:
+    secure: lQeU5JhUHgQMePWmcHh/qmi3TGe4R3H0w7i9WtiLbIWrIXGw38oVe2VOe0S0af1Ili0z2XYYAvVMdgp4QZxojMtD8o2TunndGWPz1Cg1TtFcl1Pmt8poMAMTDI50sa4blpl37DmTPgJesRxIGGmhAeOUYjsObfWcT+HDJuwgJAI9zkij8kcklsWytFo26VboBjeps4CaMIqmEiE/my4RI4DgyHdjEmNrOzKx8CxuZ/9hSNssYu6OBhOHAq9TxTohPi9jPR+F8zba8wCq/SPredVoLAal3apxT83c1mpWRoV4CHUFOGW+tD0kSBOz+0u8H4E88x0hhP59pnn6NZlDCrD0VFMI3bKA1m9iyxJW9KTPgpsvPWWe5VDpe9XTqaYCfbVTucZ3KZjOViuOdNGl5ZRFA+s4cIHc5FwTXM9xvhVrhVPgusMtw+1/xgbHITyy7F8clZIkFEN8x2F6Jrkghr6ERLwtUbnxh082DhnVpLzA2qbSQmrLKzZF2cT0PmIc6NTl5jyDVAwPtQQ3Qdd/o3uRtdodjWVGmvw+3acnrBvG37kokRUkbw+KPQv4TZvGIE8SKHUj3WVTpEfI0fXH9HuxWnuGYdJ6DpZDTF5uih48K/bfY+QYjPUynfkZ40Y2QbF4tHAtFla4A0x4siYreppEGApf2Gi7C3ilYQbTqwQ=
