@@ -291,7 +291,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
    */
   override def removeFetchItem(item: FetchItem): DansV0Bag = {
     if (locBag.getItemsToFetch.remove(FetchItem.locDeconverter(item)))
-      removeFileFromManifests(item.file, locBag.getPayLoadManifests, locBag.setPayLoadManifests)
+      removeFileFromManifests(item.file, locBag.getPayLoadManifests)
 
     if (locBag.getItemsToFetch.isEmpty) {
       val fetchFilePath = baseDir / "fetch.txt"
@@ -539,7 +539,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
       throw new IllegalArgumentException(s"cannot remove directory '$file'; you can only remove files")
 
     removeFile(file, data)
-    removeFileFromManifests(file, locBag.getPayLoadManifests, locBag.setPayLoadManifests)
+    removeFileFromManifests(file, locBag.getPayLoadManifests)
 
     this
   }
@@ -645,7 +645,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
       throw new IllegalArgumentException(s"cannot remove tagmanifest file '$file'")
 
     removeFile(file, baseDir)
-    removeFileFromManifests(file, locBag.getTagManifests, locBag.setTagManifests)
+    removeFileFromManifests(file, locBag.getTagManifests)
 
     this
   }
@@ -876,13 +876,10 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
     }
   }
 
-  private def removeFileFromManifests(file: File, manifests: jSet[LocManifest],
-                                      setManifests: jSet[LocManifest] => Unit): Unit = {
+  private def removeFileFromManifests(file: File, manifests: jSet[LocManifest]): Unit = {
     for (manifest <- manifests.asScala;
          fileChecksumMap = manifest.getFileToChecksumMap)
       fileChecksumMap.remove(file.path)
-
-    setManifests(manifests.asScala.toList.toSet.asJava)
   }
 
   private def calculateSizeOfPath(dir: File): Long = {
