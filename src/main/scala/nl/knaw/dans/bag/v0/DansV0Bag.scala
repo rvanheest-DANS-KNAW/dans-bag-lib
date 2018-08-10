@@ -882,11 +882,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
          fileChecksumMap = manifest.getFileToChecksumMap)
       fileChecksumMap.remove(file.path)
 
-    setManifests {
-      manifests.asScala.toList
-        .filterNot(_.getFileToChecksumMap.isEmpty)
-        .toSet.asJava
-    }
+    setManifests(manifests.asScala.toList.toSet.asJava)
   }
 
   private def calculateSizeOfPath(dir: File): Long = {
