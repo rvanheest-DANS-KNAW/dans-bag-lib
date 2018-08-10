@@ -318,7 +318,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
     inside(result) {
       case Success(resultBag) =>
-        resultBag.payloadManifests shouldBe empty
+        forEvery(List(ChecksumAlgorithm.SHA1, ChecksumAlgorithm.SHA256))(algo => {
+          resultBag.payloadManifests should contain key algo
+
+          resultBag.payloadManifests(algo) shouldBe empty
+        })
     }
   }
 

@@ -467,6 +467,45 @@ class SaveSpec extends TestSupportFixture
     )
   }
 
+  it should "not remove empty manifest files" in {
+    val bag = simpleBagV0()
+
+    val u = bag.data / "sub" / "u"
+    val v = bag.data / "sub" / "v"
+    val w = bag.data / "sub" / "w"
+    val x = bag.data / "x"
+    val y = bag.data / "y"
+    val z = bag.data / "z"
+
+    val sha1Manifest = bag / "manifest-sha1.txt"
+
+    // initial assumptions
+    sha1Manifest.toJava should exist
+    bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA1)(u, v, w, x, y, z)
+
+    // changes + save
+    bag.removePayloadFile(bag.data.relativize(u))
+      .flatMap(_.removePayloadFile(bag.data.relativize(v)))
+      .flatMap(_.removePayloadFile(bag.data.relativize(w)))
+      .flatMap(_.removePayloadFile(bag.data.relativize(x)))
+      .flatMap(_.removePayloadFile(bag.data.relativize(y)))
+      .flatMap(_.removePayloadFile(bag.data.relativize(z)))
+      .flatMap(_.save()) shouldBe a[Success[_]]
+
+    // expected results
+    bag.data.list.toList shouldBe empty
+    sha1Manifest.toJava should exist
+    bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA1)()
+
+    // validate bag
+    BagVerifier.quicklyVerify(bag.locBag)
+    BagLinter.lintBag(bag.path) should contain only(
+      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
+      BagitWarning.OLD_BAGIT_VERSION,
+      BagitWarning.WEAK_CHECKSUM_ALGORITHM,
+    )
+  }
+
   it should "recompute the tag manifests and save them" in {
     val bag = multipleManifestsBagV0()
 
