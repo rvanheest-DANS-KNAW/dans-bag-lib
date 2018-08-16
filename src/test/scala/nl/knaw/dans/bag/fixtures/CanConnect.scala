@@ -17,12 +17,19 @@ package nl.knaw.dans.bag.fixtures
 
 import java.net.{ HttpURLConnection, URL }
 
-import org.scalatest.Matchers
+import org.scalatest.{ Matchers, Outcome, Retries, TestSuite }
 
 import scala.util.Try
 
-trait CanConnect {
+trait CanConnect extends TestSuite with Retries {
   this: Matchers =>
+
+  override def withFixture(test: NoArgTest): Outcome = {
+    if (isRetryable(test))
+      withRetry { super.withFixture(test) }
+    else
+      super.withFixture(test)
+  }
 
   def assumeCanConnect(urls: URL*): Unit = {
     assume(Try {

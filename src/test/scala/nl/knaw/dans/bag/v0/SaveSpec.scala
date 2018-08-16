@@ -25,6 +25,7 @@ import nl.knaw.dans.bag.fixtures._
 import nl.knaw.dans.bag.{ ChecksumAlgorithm, FetchItem }
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
+import org.scalatest.tagobjects.Retryable
 
 import scala.util.{ Failure, Success }
 import scala.language.existentials
@@ -144,7 +145,7 @@ class SaveSpec extends TestSupportFixture
     )
   }
 
-  it should "create a fetch.txt file when fetch files were introduced to the bag for the first time" in {
+  it should "create a fetch.txt file when fetch files were introduced to the bag for the first time" taggedAs Retryable in {
     assumeCanConnect(lipsum1URL, lipsum2URL)
 
     val bag = multipleManifestsBagV0()
@@ -182,7 +183,7 @@ class SaveSpec extends TestSupportFixture
     )
   }
 
-  it should "save fetch.txt when there were already fetch files in the bag" in pendingUntilFixed { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/117
+  it should "save fetch.txt when there were already fetch files in the bag" taggedAs Retryable in pendingUntilFixed { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/117
     assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
 
     val bag = fetchBagV0()
@@ -239,7 +240,7 @@ class SaveSpec extends TestSupportFixture
     )
   }
 
-  it should "list the added fetch files in the payload manifests" in {
+  it should "list the added fetch files in the payload manifests" taggedAs Retryable in {
     assumeCanConnect(lipsum5URL)
 
     val bag = multipleManifestsBagV0()
@@ -273,7 +274,7 @@ class SaveSpec extends TestSupportFixture
     )
   }
 
-  it should "list fetch.txt in all tagmanifests" in {
+  it should "list fetch.txt in all tagmanifests" taggedAs Retryable in {
     assumeCanConnect(lipsum5URL)
 
     val bag = multipleManifestsBagV0()

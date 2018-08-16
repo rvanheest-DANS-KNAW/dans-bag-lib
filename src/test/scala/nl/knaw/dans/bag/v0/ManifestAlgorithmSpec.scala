@@ -17,6 +17,7 @@ package nl.knaw.dans.bag.v0
 
 import nl.knaw.dans.bag.fixtures._
 import nl.knaw.dans.bag.{ ChecksumAlgorithm, betterFileToPath }
+import org.scalatest.tagobjects.Retryable
 
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success }
@@ -139,7 +140,7 @@ class ManifestAlgorithmSpec extends TestSupportFixture
     }
   }
 
-  it should "calculate and add the checksums of fetch files to the newly added manifest" in {
+  it should "calculate and add the checksums of fetch files to the newly added manifest" taggedAs Retryable in {
     assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL)
     val bag = fetchBagV0()
     val algorithm = ChecksumAlgorithm.MD5

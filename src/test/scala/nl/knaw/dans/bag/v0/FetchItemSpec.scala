@@ -20,6 +20,7 @@ import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException, Paths }
 
 import nl.knaw.dans.bag.fixtures._
 import nl.knaw.dans.bag.{ ChecksumAlgorithm, FetchItem, RelativePath, betterFileToPath }
+import org.scalatest.tagobjects.Retryable
 
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success }
@@ -51,7 +52,7 @@ class FetchItemSpec extends TestSupportFixture
     simpleBagV0().fetchFiles shouldBe empty
   }
 
-  "addFetchItem with RelativePath" should "add the fetch item to the bag's list of fetch items" in {
+  "addFetchItem with RelativePath" should "add the fetch item to the bag's list of fetch items" taggedAs Retryable in {
     val fetchFileSrc = lipsum1URL
     assumeCanConnect(fetchFileSrc)
 
@@ -65,7 +66,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  it should "download the file and calculate all checksums for the file" in {
+  it should "download the file and calculate all checksums for the file" taggedAs Retryable in {
     val fetchFileSrc = lipsum2URL
     assumeCanConnect(fetchFileSrc)
 
@@ -83,7 +84,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  it should "remove the file after having calculated the checksums" in {
+  it should "remove the file after having calculated the checksums" taggedAs Retryable in {
     val fetchFileSrc = lipsum3URL
     assumeCanConnect(fetchFileSrc)
 
@@ -101,7 +102,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  it should "add the fetch.txt file to all tag manifests when a first fetch.txt file was added" in {
+  it should "add the fetch.txt file to all tag manifests when a first fetch.txt file was added" taggedAs Retryable in {
     val fetchFileSrc = lipsum4URL
     assumeCanConnect(fetchFileSrc)
 
@@ -129,7 +130,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  it should "fail when the destination already exists in the fetch.txt" in {
+  it should "fail when the destination already exists in the fetch.txt" taggedAs Retryable in {
     val fetchFileSrc = lipsum1URL
     assumeCanConnect(fetchFileSrc)
 
@@ -163,7 +164,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  "addFetchItem with java.nio.file.Path" should "forward to the overload with RelativePath" in {
+  "addFetchItem with java.nio.file.Path" should "forward to the overload with RelativePath" taggedAs Retryable in {
     val fetchFileSrc = lipsum1URL
     assumeCanConnect(fetchFileSrc)
 
@@ -495,7 +496,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  "replaceFetchItemWithFile with RelativePath" should "resolve a fetch item by file" in {
+  "replaceFetchItemWithFile with RelativePath" should "resolve a fetch item by file" taggedAs Retryable in {
     assumeCanConnect(lipsum4URL)
 
     val bag = fetchBagV0()
@@ -518,7 +519,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  "replaceFetchItemWithFile with java.nio.file.Path" should "forward to the overload with RelativePath" in {
+  "replaceFetchItemWithFile with java.nio.file.Path" should "forward to the overload with RelativePath" taggedAs Retryable in {
     assumeCanConnect(lipsum4URL)
 
     val bag = fetchBagV0()
@@ -532,7 +533,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  "replaceFetchItemWithFile with URL" should "resolve a fetch item by url" in {
+  "replaceFetchItemWithFile with URL" should "resolve a fetch item by url" taggedAs Retryable in {
     assumeCanConnect(lipsum4URL)
 
     val bag = fetchBagV0()
@@ -566,7 +567,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  "replaceFetchItemWithFile with FetchItem" should "download the file and put it in the payload" in {
+  "replaceFetchItemWithFile with FetchItem" should "download the file and put it in the payload" taggedAs Retryable in {
     assumeCanConnect(lipsum4URL)
 
     val bag = fetchBagV0()
@@ -580,7 +581,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  it should "create the subdirectories that are necessary for placing the file in its proper place" in {
+  it should "create the subdirectories that are necessary for placing the file in its proper place" taggedAs Retryable in {
     assumeCanConnect(lipsum1URL)
 
     val bag = fetchBagV0()
@@ -596,7 +597,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  it should "remove the file from the list of fetch files" in {
+  it should "remove the file from the list of fetch files" taggedAs Retryable in {
     assumeCanConnect(lipsum4URL)
 
     val bag = fetchBagV0()
@@ -646,7 +647,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  it should "fail when the URL is not resolvable" in {
+  it should "fail when the URL is not resolvable" taggedAs Retryable in {
     assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
 
     val bag = fetchBagV0()
@@ -663,7 +664,7 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  it should "fail when the checksum of the downloaded file does not match the one listed in the payload manifests" in {
+  it should "fail when the checksum of the downloaded file does not match the one listed in the payload manifests" taggedAs Retryable in {
     assumeCanConnect(lipsum1URL, lipsum2URL, lipsum3URL, lipsum4URL, lipsum5URL)
 
     val bag = fetchBagV0()
