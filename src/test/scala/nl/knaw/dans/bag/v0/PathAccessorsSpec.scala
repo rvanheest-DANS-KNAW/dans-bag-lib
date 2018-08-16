@@ -27,7 +27,7 @@ class PathAccessorsSpec extends TestSupportFixture with TestBags {
 
   "data" should "point to the root of the bag/data directory" in {
     val bag = simpleBagV0()
-    bag.data.toJava shouldBe (bag.baseDir / "data" toJava)
+    bag.data shouldBe (bag.baseDir / "data")
     bag.data.listRecursively.toList should contain only(
       bag.data / "x",
       bag.data / "y",

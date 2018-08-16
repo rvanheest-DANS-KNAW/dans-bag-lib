@@ -16,10 +16,14 @@
 package nl.knaw.dans.bag.fixtures
 
 import org.scalatest._
+import org.scalatest.enablers.Existence
 
 trait TestSupportFixture extends FlatSpec
   with Matchers
   with Inside
   with OptionValues
   with EitherValues
-  with Inspectors
+  with Inspectors {
+
+  implicit def existenceOfFile[FILE <: better.files.File]: Existence[FILE] = _.exists
+}

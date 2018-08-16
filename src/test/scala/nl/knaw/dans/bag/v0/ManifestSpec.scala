@@ -52,11 +52,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       val relativeDest: RelativePath = _ / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag.data)
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       addPayloadFile(bag)(file)(relativeDest) shouldBe a[Success[_]]
 
-      dest.toJava should exist
+      dest should exist
       dest.contentAsString shouldBe file.contentAsString
       dest.sha1 shouldBe file.sha1
     }
@@ -93,14 +93,14 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       val relativeDest: RelativePath = _ / ".." / ".." / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag.data)
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       inside(addPayloadFile(bag)(file)(relativeDest)) {
         case Failure(e: IllegalArgumentException) =>
           e should have message s"pathInData '$dest' is supposed to point to a file that is a child of the bag/data directory"
       }
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
     }
 
     it should "fail when the destination already exists" in {
@@ -109,14 +109,14 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       val relativeDest: RelativePath = _ / ".." / ".." / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag.data) createIfNotExists (createParents = true) writeText lipsum(1)
 
-      dest.toJava should exist
+      dest should exist
 
       inside(addPayloadFile(bag)(file)(relativeDest)) {
         case Failure(e: FileAlreadyExistsException) =>
           e should have message dest.toString
       }
 
-      dest.toJava should exist
+      dest should exist
       dest.contentAsString shouldBe lipsum(1)
     }
 
@@ -126,7 +126,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       val relativeDest: RelativePath = _ / "x"
       val dest = relativeDest(bag.data)
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
       bag.fetchFiles.map(_.file) contains dest
       bag.payloadManifests(ChecksumAlgorithm.SHA1) should contain key dest
       val sha1Before = bag.payloadManifests(ChecksumAlgorithm.SHA1)(dest)
@@ -136,7 +136,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
         case Failure(e: FileAlreadyExistsException) =>
           e should have message s"$dest: file already present in bag as a fetch file"
 
-          dest.toJava shouldNot exist
+          dest shouldNot exist
           bag.fetchFiles.map(_.file) contains dest
           bag.payloadManifests(ChecksumAlgorithm.SHA1) should contain key dest
 
@@ -171,11 +171,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val relativeDest: RelativePath = _ / "path" / "to" / "file-copy.txt"
     val dest = relativeDest(bag.data)
 
-    dest.toJava shouldNot exist
+    dest shouldNot exist
 
     file.inputStream()(bag.addPayloadFile(_, Paths.get("path/to/file-copy.txt"))) shouldBe a[Success[_]]
 
-    dest.toJava should exist
+    dest should exist
     dest.contentAsString shouldBe file.contentAsString
     dest.sha1 shouldBe file.sha1
   }
@@ -199,7 +199,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
           .map(file => dest / newDir.relativize(file).toString)
 
         forEvery(files)(file => {
-          file.toJava should exist
+          file should exist
 
           forEvery(List(ChecksumAlgorithm.SHA1, ChecksumAlgorithm.SHA256))(algo => {
             resultBag.payloadManifests(algo) should contain key file
@@ -215,11 +215,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val relativeDest: RelativePath = _ / "path" / "to" / "file-copy.txt"
     val dest = relativeDest(bag.data)
 
-    dest.toJava shouldNot exist
+    dest shouldNot exist
 
     bag.addPayloadFile(file, Paths.get("path/to/file-copy.txt")) shouldBe a[Success[_]]
 
-    dest.toJava should exist
+    dest should exist
     dest.contentAsString shouldBe file.contentAsString
     dest.sha1 shouldBe file.sha1
   }
@@ -228,11 +228,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag.data / "sub" / "u"
 
-    file.toJava should exist
+    file should exist
 
     bag.removePayloadFile(_ / "sub" / "u") shouldBe a[Success[_]]
-    file.toJava shouldNot exist
-    file.parent.toJava should exist
+    file shouldNot exist
+    file.parent should exist
   }
 
   it should "remove the removed payload file from all manifests" in {
@@ -256,18 +256,18 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
     bag.addPayloadFile(file)(_ / "path" / "to" / "file" / "a.txt") shouldBe a[Success[_]]
 
-    destination.toJava should exist
+    destination should exist
     bag.payloadManifests(ChecksumAlgorithm.SHA1) should contain key destination
 
     inside(bag.removePayloadFile(_ / "path" / "to" / "file" / "a.txt")) {
       case Success(resultBag) =>
         resultBag.payloadManifests(ChecksumAlgorithm.SHA1) shouldNot contain key destination
 
-        destination.toJava shouldNot exist
-        destination.parent.toJava shouldNot exist
-        destination.parent.parent.toJava shouldNot exist
-        destination.parent.parent.parent.toJava shouldNot exist
-        destination.parent.parent.parent.parent.toJava should exist
+        destination shouldNot exist
+        destination.parent shouldNot exist
+        destination.parent.parent shouldNot exist
+        destination.parent.parent.parent shouldNot exist
+        destination.parent.parent.parent.parent should exist
         destination.parent.parent.parent.parent shouldBe resultBag.data
     }
   }
@@ -284,7 +284,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
     inside(result) {
       case Success(resultBag) =>
-        resultBag.data.toJava should exist
+        resultBag.data should exist
         resultBag.data.children should have size 0
     }
   }
@@ -330,7 +330,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag.data / "doesnotexist.txt"
 
-    file.toJava shouldNot exist
+    file shouldNot exist
 
     inside(bag.removePayloadFile(_ / "doesnotexist.txt")) {
       case Failure(e: NoSuchFileException) =>
@@ -342,7 +342,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag / "bagit.txt"
 
-    file.toJava should exist
+    file should exist
     file.isChildOf(bag.data) shouldBe false
 
     inside(bag.removePayloadFile(_ / ".." / "bagit.txt")) {
@@ -356,7 +356,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag.data / "sub"
 
-    file.toJava should exist
+    file should exist
     file.isDirectory shouldBe true
     val checksumsBeforeCall = bag.payloadManifests
 
@@ -364,7 +364,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove directory '$file'; you can only remove files"
 
-        file.toJava should exist
+        file should exist
         file.isDirectory shouldBe true
 
         // payload manifests didn't change
@@ -376,11 +376,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag.data / "sub" / "u"
 
-    file.toJava should exist
+    file should exist
 
     bag.removePayloadFile(Paths.get("sub/u")) shouldBe a[Success[_]]
-    file.toJava shouldNot exist
-    file.parent.toJava should exist
+    file shouldNot exist
+    file.parent should exist
   }
 
   "tagManifests" should "list all entries in the tagmanifest-<alg>.txt files" in {
@@ -408,11 +408,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       val relativeDest: RelativePath = _ / "metadata" / "temp" / "file-copy.txt"
       val dest = relativeDest(bag)
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       addTagFile(bag)(file)(relativeDest) shouldBe a[Success[_]]
 
-      dest.toJava should exist
+      dest should exist
       dest.contentAsString shouldBe file.contentAsString
       dest.sha1 shouldBe file.sha1
     }
@@ -449,14 +449,14 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       val relativeDest: RelativePath = _ / "data" / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag)
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       inside(addTagFile(bag)(file)(relativeDest)) {
         case Failure(e: IllegalArgumentException) =>
           e should have message s"cannot add a tag file like '$dest' to the bag/data directory"
       }
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
     }
 
     it should "fail when the destination is outside the bag directory" in {
@@ -465,14 +465,14 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       val relativeDest: RelativePath = _ / ".." / "path" / "to" / "file-copy.txt"
       val dest = relativeDest(bag)
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       inside(addTagFile(bag)(file)(relativeDest)) {
         case Failure(e: IllegalArgumentException) =>
           e should have message s"cannot add a tag file like '$dest' to a place outside the bag directory"
       }
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
     }
 
     it should "fail when the destination already exists" in {
@@ -481,7 +481,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       val relativeDest: RelativePath = _ / "metadata" / "dataset.xml"
       val dest = relativeDest(bag)
 
-      dest.toJava should exist
+      dest should exist
       val oldContent = dest.contentAsString
 
       inside(addTagFile(bag)(file)(relativeDest)) {
@@ -489,7 +489,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
           e should have message dest.toString
       }
 
-      dest.toJava should exist
+      dest should exist
       dest.contentAsString shouldBe oldContent
     }
 
@@ -501,14 +501,14 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
       dest.delete()
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       inside(addTagFile(bag)(file)(relativeDest)) {
         case Failure(e: IllegalArgumentException) =>
           e should have message "tag file 'bag-info.txt' is controlled by the library itself; you cannot add a file to this location"
       }
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
     }
 
     it should "fail when the destination points to bag/bagit.txt, which was removed first" in {
@@ -519,14 +519,14 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
       dest.delete()
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       inside(addTagFile(bag)(file)(relativeDest)) {
         case Failure(e: IllegalArgumentException) =>
           e should have message "tag file 'bagit.txt' is controlled by the library itself; you cannot add a file to this location"
       }
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
     }
 
     it should "fail when the destination points to bag/fetch.txt, which was removed first" in {
@@ -537,14 +537,14 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
       dest.delete()
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       inside(addTagFile(bag)(file)(relativeDest)) {
         case Failure(e: IllegalArgumentException) =>
           e should have message "tag file 'fetch.txt' is controlled by the library itself; you cannot add a file to this location"
       }
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
     }
 
     it should "fail when the destination points to bag/manifest-XXX.txt, which was removed first" in {
@@ -555,14 +555,14 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
       dest.delete()
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       inside(addTagFile(bag)(file)(relativeDest)) {
         case Failure(e: IllegalArgumentException) =>
           e should have message "manifest files are controlled by the library itself; you cannot add a file to this location"
       }
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
     }
 
     it should "fail when the destination points to bag/tagmanifest-XXX.txt, which was removed first" in {
@@ -573,14 +573,14 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
       dest.delete()
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
 
       inside(addTagFile(bag)(file)(relativeDest)) {
         case Failure(e: IllegalArgumentException) =>
           e should have message "tagmanifest files are controlled by the library itself; you cannot add a file to this location"
       }
 
-      dest.toJava shouldNot exist
+      dest shouldNot exist
     }
   }
 
@@ -609,11 +609,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val relativeDest: RelativePath = _ / "metadata" / "temp" / "file-copy.txt"
     val dest = relativeDest(bag)
 
-    dest.toJava shouldNot exist
+    dest shouldNot exist
 
     file.inputStream()(bag.addTagFile(_, Paths.get("metadata/temp/file-copy.txt"))) shouldBe a[Success[_]]
 
-    dest.toJava should exist
+    dest should exist
     dest.contentAsString shouldBe file.contentAsString
     dest.sha1 shouldBe file.sha1
   }
@@ -637,7 +637,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
           .map(file => dest / newDir.relativize(file).toString)
 
         forEvery(files)(file => {
-          file.toJava should exist
+          file should exist
 
           forEvery(List(ChecksumAlgorithm.SHA1, ChecksumAlgorithm.SHA256))(algo => {
             resultBag.tagManifests(algo) should contain key file
@@ -653,11 +653,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val relativeDest: RelativePath = _ / "metadata" / "temp" / "file-copy.txt"
     val dest = relativeDest(bag)
 
-    dest.toJava shouldNot exist
+    dest shouldNot exist
 
     bag.addTagFile(file, Paths.get("metadata/temp/file-copy.txt")) shouldBe a[Success[_]]
 
-    dest.toJava should exist
+    dest should exist
     dest.contentAsString shouldBe file.contentAsString
     dest.sha1 shouldBe file.sha1
   }
@@ -666,12 +666,12 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag / "metadata" / "dataset.xml"
 
-    file.toJava should exist
+    file should exist
 
     bag.removeTagFile(_ / "metadata" / "dataset.xml") shouldBe a[Success[_]]
-    file.toJava shouldNot exist
+    file shouldNot exist
     file.parent shouldBe bag / "metadata"
-    file.parent.toJava should exist
+    file.parent should exist
   }
 
   it should "remove the removed tag file from all manifests" in {
@@ -695,19 +695,19 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
     bag.addTagFile(file)(_ / "path" / "to" / "file" / "a.txt") shouldBe a[Success[_]]
 
-    destination.toJava should exist
+    destination should exist
     bag.tagManifests(ChecksumAlgorithm.SHA1) should contain key destination
 
     inside(bag.removeTagFile(_ / "path" / "to" / "file" / "a.txt")) {
       case Success(resultBag) =>
         resultBag.tagManifests(ChecksumAlgorithm.SHA1) shouldNot contain key destination
 
-        destination.toJava shouldNot exist
-        destination.parent.toJava shouldNot exist
-        destination.parent.parent.toJava shouldNot exist
-        destination.parent.parent.parent.toJava shouldNot exist
+        destination shouldNot exist
+        destination.parent shouldNot exist
+        destination.parent.parent shouldNot exist
+        destination.parent.parent.parent shouldNot exist
         destination.parent.parent.parent.parent shouldBe resultBag.baseDir
-        destination.parent.parent.parent.parent.toJava should exist
+        destination.parent.parent.parent.parent should exist
     }
   }
 
@@ -715,7 +715,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag / "doesnotexist.txt"
 
-    file.toJava shouldNot exist
+    file shouldNot exist
 
     inside(bag.removeTagFile(_ / "doesnotexist.txt")) {
       case Failure(e: NoSuchFileException) => e should have message file.toString
@@ -726,7 +726,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag.data / "x"
 
-    file.toJava should exist
+    file should exist
     file.isChildOf(bag.data) shouldBe true
 
     inside(bag.removeTagFile(_ / "data" / "x")) {
@@ -739,7 +739,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag / ".." / "temp.txt" createIfNotExists() writeText "content of temp.txt"
 
-    file.toJava should exist
+    file should exist
     file.isChildOf(bag) shouldBe false
 
     inside(bag.removeTagFile(_ / ".." / "temp.txt")) {
@@ -751,7 +751,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
   it should "fail when the file to remove is the bag directory itself" in pendingUntilFixed {
     val bag = simpleBagV0()
 
-    bag.toJava should exist
+    bag.baseDir should exist
     bag.isChildOf(bag) shouldBe false // TODO why does this actually return true??? - https://github.com/pathikrit/better-files/issues/247
 
     inside(bag.removeTagFile(x => x)) {
@@ -764,7 +764,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag / "bag-info.txt"
 
-    file.toJava should exist
+    file should exist
     file.isChildOf(bag) shouldBe true
 
     inside(bag.removeTagFile(_ / "bag-info.txt")) {
@@ -777,7 +777,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag / "bagit.txt"
 
-    file.toJava should exist
+    file should exist
     file.isChildOf(bag) shouldBe true
 
     inside(bag.removeTagFile(_ / "bagit.txt")) {
@@ -790,7 +790,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = fetchBagV0()
     val file = bag / "fetch.txt"
 
-    file.toJava should exist
+    file should exist
     file.isChildOf(bag) shouldBe true
 
     inside(bag.removeTagFile(_ / "fetch.txt")) {
@@ -803,7 +803,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag / "manifest-sha1.txt"
 
-    file.toJava should exist
+    file should exist
     file.isChildOf(bag) shouldBe true
 
     inside(bag.removeTagFile(_ / "manifest-sha1.txt")) {
@@ -816,7 +816,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag / "tagmanifest-sha1.txt"
 
-    file.toJava should exist
+    file should exist
     file.isChildOf(bag) shouldBe true
 
     inside(bag.removeTagFile(_ / "tagmanifest-sha1.txt")) {
@@ -829,7 +829,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val dir = bag / "metadata"
 
-    dir.toJava should exist
+    dir should exist
     dir.isChildOf(bag) shouldBe true
 
     inside(bag.removeTagFile(_ / "metadata")) {
@@ -842,11 +842,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val bag = simpleBagV0()
     val file = bag / "metadata" / "dataset.xml"
 
-    file.toJava should exist
+    file should exist
 
     bag.removeTagFile(Paths.get("metadata/dataset.xml")) shouldBe a[Success[_]]
-    file.toJava shouldNot exist
+    file shouldNot exist
     file.parent shouldBe bag / "metadata"
-    file.parent.toJava should exist
+    file.parent should exist
   }
 }

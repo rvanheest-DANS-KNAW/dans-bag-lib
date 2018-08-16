@@ -37,12 +37,12 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
       "Is-Version-Of" -> Seq(s"urn:uuid:${ UUID.randomUUID() }")
     )
 
-    baseDir.toJava shouldNot exist
+    baseDir shouldNot exist
 
     DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
-    baseDir.toJava should exist
-    (baseDir / "data").toJava should exist
+    baseDir should exist
+    (baseDir / "data") should exist
     (baseDir / "data").listRecursively.toList shouldBe empty
   }
 
@@ -53,11 +53,11 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
       "Is-Version-Of" -> Seq(s"urn:uuid:${ UUID.randomUUID() }")
     )
 
-    baseDir.toJava shouldNot exist
+    baseDir shouldNot exist
 
     DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
-    baseDir.toJava should exist
+    baseDir should exist
   }
 
   it should "create a bag-info.txt file if the given Map is empty, " +
@@ -67,7 +67,7 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
 
     DansV0Bag.empty(baseDir, algorithms) shouldBe a[Success[_]]
 
-    (baseDir / "bag-info.txt").toJava should exist
+    (baseDir / "bag-info.txt") should exist
 
     baseDir should containInBagInfoOnly(
       "Payload-Oxum" -> Seq("0.0"),
@@ -85,7 +85,7 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
 
     DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
-    (baseDir / "bag-info.txt").toJava should exist
+    (baseDir / "bag-info.txt") should exist
 
     baseDir should containInBagInfoOnly(
       "Payload-Oxum" -> Seq("0.0"),
@@ -105,7 +105,7 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
 
     DansV0Bag.empty(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
-    (baseDir / "bag-info.txt").toJava should exist
+    (baseDir / "bag-info.txt") should exist
 
     baseDir should containInBagInfoOnly(
       "Payload-Oxum" -> Seq("0.0"),
@@ -161,7 +161,7 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
   it should "fail when the base directory for the bag-to-be-created already exists" in {
     val baseDir = testDir / "emptyTestBag" createDirectories()
     baseDir / "x.txt" createIfNotExists() writeText lipsum(2)
-    baseDir.toJava should exist
+    baseDir should exist
 
     val algorithms = Set(ChecksumAlgorithm.SHA1, ChecksumAlgorithm.SHA512)
 
@@ -195,7 +195,7 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
       "Is-Version-Of" -> Seq(s"urn:uuid:${ UUID.randomUUID() }")
     )
 
-    baseDir.toJava should exist
+    baseDir should exist
     baseDir.listRecursively.filter(_.isRegularFile).toList should contain only(file1, file2)
 
     DansV0Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
@@ -203,8 +203,8 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
     val file1Data = baseDir / "data" / baseDir.relativize(file1).toString
     val file2Data = baseDir / "data" / baseDir.relativize(file2).toString
 
-    baseDir.toJava should exist
-    (baseDir / "data").toJava should exist
+    baseDir should exist
+    (baseDir / "data") should exist
     (baseDir / "data").listRecursively.filter(_.isRegularFile).toList should contain only(file1Data, file2Data)
     baseDir.list.filter(_.isRegularFile).toList should contain only(
       baseDir / "bagit.txt",
@@ -221,7 +221,7 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
 
     DansV0Bag.createFromData(baseDir, algorithms) shouldBe a[Success[_]]
 
-    (baseDir / "bag-info.txt").toJava should exist
+    (baseDir / "bag-info.txt") should exist
 
     baseDir should containInBagInfoOnly(
       "Payload-Oxum" -> Seq("1471.2"),
@@ -239,7 +239,7 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
 
     DansV0Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
-    (baseDir / "bag-info.txt").toJava should exist
+    (baseDir / "bag-info.txt") should exist
 
     baseDir should containInBagInfoOnly(
       "Payload-Oxum" -> Seq("1471.2"),
@@ -259,7 +259,7 @@ class FactoryMethodsSpec extends TestSupportFixture with TestBags with BagMatche
 
     DansV0Bag.createFromData(baseDir, algorithms, bagInfo) shouldBe a[Success[_]]
 
-    (baseDir / "bag-info.txt").toJava should exist
+    (baseDir / "bag-info.txt") should exist
 
     baseDir should containInBagInfoOnly(
       "Payload-Oxum" -> Seq("1471.2"),

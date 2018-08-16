@@ -23,8 +23,8 @@ class ValidationSpec extends TestSupportFixture with TestBags with FetchFileMeta
   "isComplete" should "succeed on a complete bag" in {
     val bag = simpleBagV0()
 
-    (bag / "bagit.txt").toJava should exist
-    bag.data.toJava should exist
+    (bag / "bagit.txt") should exist
+    bag.data should exist
     bag.glob("manifest-*.txt").toList should not be empty
     bag.fetchFiles shouldBe empty
 
@@ -39,10 +39,10 @@ class ValidationSpec extends TestSupportFixture with TestBags with FetchFileMeta
     lipsum3File.copyTo(bag.data / "y-old")
     lipsum4File.copyTo(bag.data / "x")
 
-    (bag / "bagit.txt").toJava should exist
-    bag.data.toJava should exist
+    (bag / "bagit.txt") should exist
+    bag.data should exist
     bag.glob("manifest-*.txt").toList should not be empty
-    every(bag.fetchFiles.map(_.file.toJava)) should exist
+    every(bag.fetchFiles.map(_.file)) should exist
 
     bag.isComplete shouldBe 'right
   }
@@ -123,8 +123,8 @@ class ValidationSpec extends TestSupportFixture with TestBags with FetchFileMeta
     val bag = simpleBagV0()
 
     // check isComplete verifications
-    (bag / "bagit.txt").toJava should exist
-    bag.data.toJava should exist
+    (bag / "bagit.txt") should exist
+    bag.data should exist
     bag.glob("manifest-*.txt").toList should not be empty
     bag.fetchFiles shouldBe empty
 
@@ -158,10 +158,10 @@ class ValidationSpec extends TestSupportFixture with TestBags with FetchFileMeta
     lipsum4File.copyTo(bag.data / "x")
 
     // check isComplete verifications
-    (bag / "bagit.txt").toJava should exist
-    bag.data.toJava should exist
+    (bag / "bagit.txt") should exist
+    bag.data should exist
     bag.glob("manifest-*.txt").toList should not be empty
-    every(bag.fetchFiles.map(_.file.toJava)) should exist
+    every(bag.fetchFiles.map(_.file)) should exist
 
     // check payload manifest verification
     forEvery(bag.payloadManifests) {

@@ -404,25 +404,25 @@ class FetchItemSpec extends TestSupportFixture
   "replaceFileWithFetchItem with RelativePath" should "remove the file from the payload" in {
     val bag = fetchBagV0()
 
-    (bag.data / "y").toJava should exist
+    (bag.data / "y") should exist
 
     inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
       case Success(resultBag) =>
-        (resultBag.data / "y").toJava shouldNot exist
+        (resultBag.data / "y") shouldNot exist
     }
   }
 
   it should "remove any empty directories that are left behind after removing the file from the payload" in {
     val bag = fetchBagV0()
 
-    (bag.data / "more" / "files" / "abc").toJava should exist
+    (bag.data / "more" / "files" / "abc") should exist
 
     inside(bag.replaceFileWithFetchItem(_ / "more" / "files" / "abc", new URL("http://abc"))) {
       case Success(resultBag) =>
-        (resultBag.data / "more" / "files" / "abc").toJava shouldNot exist
-        (resultBag.data / "more" / "files").toJava shouldNot exist
-        (resultBag.data / "more").toJava shouldNot exist
-        resultBag.data.toJava should exist
+        (resultBag.data / "more" / "files" / "abc") shouldNot exist
+        (resultBag.data / "more" / "files") shouldNot exist
+        (resultBag.data / "more") shouldNot exist
+        resultBag.data should exist
     }
   }
 
@@ -458,7 +458,7 @@ class FetchItemSpec extends TestSupportFixture
   it should "fail when the file does not exist in the payload manifest" in {
     val bag = fetchBagV0()
 
-    (bag.data / "no-such-file.txt").toJava shouldNot exist
+    (bag.data / "no-such-file.txt") shouldNot exist
 
     inside(bag.replaceFileWithFetchItem(_ / "no-such-file.txt", new URL("http://xxx"))) {
       case Failure(e: NoSuchFileException) =>
@@ -487,11 +487,11 @@ class FetchItemSpec extends TestSupportFixture
   "replaceFileWithFetchItem with java.nio.file.Path" should "forward to the overload with RelativePath" in {
     val bag = fetchBagV0()
 
-    (bag.data / "y").toJava should exist
+    (bag.data / "y") should exist
 
     inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://y"))) {
       case Success(resultBag) =>
-        (resultBag.data / "y").toJava shouldNot exist
+        (resultBag.data / "y") shouldNot exist
     }
   }
 
@@ -501,11 +501,11 @@ class FetchItemSpec extends TestSupportFixture
     val bag = fetchBagV0()
     val x = bag.data / "x"
 
-    x.toJava shouldNot exist
+    x shouldNot exist
 
     inside(bag.replaceFetchItemWithFile(_ / "x")) {
       case Success(_) =>
-        x.toJava should exist
+        x should exist
     }
   }
 
@@ -524,11 +524,11 @@ class FetchItemSpec extends TestSupportFixture
     val bag = fetchBagV0()
     val x = bag.data / "x"
 
-    x.toJava shouldNot exist
+    x shouldNot exist
 
     inside(bag.replaceFetchItemWithFile(Paths.get("x"))) {
       case Success(_) =>
-        x.toJava should exist
+        x should exist
     }
   }
 
@@ -539,11 +539,11 @@ class FetchItemSpec extends TestSupportFixture
     val url = lipsum4URL
     val path = lipsum4Dest(bag.data)
 
-    path.toJava shouldNot exist
+    path shouldNot exist
 
     inside(bag.replaceFetchItemWithFile(url)) {
       case Success(_) =>
-        path.toJava should exist
+        path should exist
     }
   }
 
@@ -572,11 +572,11 @@ class FetchItemSpec extends TestSupportFixture
     val bag = fetchBagV0()
     val x = bag.data / "x"
 
-    x.toJava shouldNot exist
+    x shouldNot exist
 
     inside(bag.replaceFetchItemWithFile(FetchItem(lipsum4URL, 12L, x))) {
       case Success(_) =>
-        x.toJava should exist
+        x should exist
     }
   }
 
@@ -586,13 +586,13 @@ class FetchItemSpec extends TestSupportFixture
     val bag = fetchBagV0()
     val subU = bag.data / "sub" / "u"
 
-    subU.toJava shouldNot exist
-    subU.parent.toJava shouldNot exist
-    subU.parent.parent.toJava should exist
+    subU shouldNot exist
+    subU.parent shouldNot exist
+    subU.parent.parent should exist
 
     inside(bag.replaceFetchItemWithFile(FetchItem(lipsum1URL, 12L, subU))) {
       case Success(_) =>
-        subU.toJava should exist
+        subU should exist
     }
   }
 
@@ -614,7 +614,7 @@ class FetchItemSpec extends TestSupportFixture
     val bag = fetchBagV0()
     val u = (bag.data / "sub" createDirectory()) / "u" writeText lipsum(1)
 
-    u.toJava should exist
+    u should exist
 
     inside(bag.replaceFetchItemWithFile(FetchItem(lipsum1URL, 12L, u))) {
       case Failure(e: FileAlreadyExistsException) =>
@@ -673,7 +673,7 @@ class FetchItemSpec extends TestSupportFixture
       .getFileToChecksumMap
       .put(x, "invalid-checksum")
 
-    x.toJava shouldNot exist
+    x shouldNot exist
 
     val fetchItem = FetchItem(lipsum4URL, 12L, x)
     inside(bag.replaceFetchItemWithFile(fetchItem)) {
@@ -685,7 +685,7 @@ class FetchItemSpec extends TestSupportFixture
           "metadata",
         )
         bag.fetchFiles should contain(fetchItem)
-        x.toJava shouldNot exist
+        x shouldNot exist
     }
   }
 }

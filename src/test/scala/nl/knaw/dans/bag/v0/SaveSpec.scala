@@ -126,14 +126,14 @@ class SaveSpec extends TestSupportFixture
 
     // initial assumptions
     bag.fetchFiles shouldBe empty
-    fetchTxt.toJava shouldNot exist
+    fetchTxt shouldNot exist
 
     // (no) changes + save
     bag.save() shouldBe a[Success[_]]
 
     // expected results
     bag.fetchFiles shouldBe empty
-    fetchTxt.toJava shouldNot exist
+    fetchTxt shouldNot exist
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
@@ -155,7 +155,7 @@ class SaveSpec extends TestSupportFixture
 
     // initial assumptions
     bag.fetchFiles shouldBe empty
-    fetchTxt.toJava shouldNot exist
+    fetchTxt shouldNot exist
 
     // changes + save
     bag.addFetchItem(lipsum1URL, _ / "some-file1.txt")
@@ -167,7 +167,7 @@ class SaveSpec extends TestSupportFixture
       fetchItem1,
       fetchItem2,
     )
-    fetchTxt.toJava should exist
+    fetchTxt should exist
     bag.baseDir should containInFetchOnly(
       fetchItem1,
       fetchItem2
@@ -201,7 +201,7 @@ class SaveSpec extends TestSupportFixture
       existingFetchItem3,
       existingFetchItem4,
     )
-    fetchTxt.toJava should exist
+    fetchTxt should exist
     bag.baseDir should containInFetchOnly(
       existingFetchItem1,
       existingFetchItem2,
@@ -221,7 +221,7 @@ class SaveSpec extends TestSupportFixture
       existingFetchItem4,
       newFetchItem,
     )
-    fetchTxt.toJava should exist
+    fetchTxt should exist
     bag.baseDir should containInFetchOnly(
       existingFetchItem1,
       existingFetchItem2,
@@ -323,7 +323,7 @@ class SaveSpec extends TestSupportFixture
       existingFetchItem3,
       existingFetchItem4,
     )
-    fetchTxt.toJava should exist
+    fetchTxt should exist
     bag.baseDir should containInFetchOnly(
       existingFetchItem1,
       existingFetchItem2,
@@ -340,7 +340,7 @@ class SaveSpec extends TestSupportFixture
 
     // expected results
     bag.fetchFiles shouldBe empty
-    fetchTxt.toJava shouldNot exist
+    fetchTxt shouldNot exist
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
@@ -404,10 +404,10 @@ class SaveSpec extends TestSupportFixture
     val sha256Manifest = bag / "manifest-sha256.txt"
 
     // initial assumptions
-    sha1Manifest.toJava should exist
+    sha1Manifest should exist
     bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA1)(u, v, w, x, y, z)
     sha1Manifest.contentAsString should not include bag.relativize(abc).toString
-    sha256Manifest.toJava shouldNot exist
+    sha256Manifest shouldNot exist
 
     // changes + save
     val newFile = testDir / "xxx.txt" createIfNotExists (createParents = true) writeText lipsum(5)
@@ -416,7 +416,7 @@ class SaveSpec extends TestSupportFixture
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
-    sha256Manifest.toJava should exist
+    sha256Manifest should exist
     bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA1)(u, v, w, x, y, z, abc)
     bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA256)(u, v, w, x, y, z, abc)
 
@@ -443,10 +443,10 @@ class SaveSpec extends TestSupportFixture
     val sha256Manifest = bag / "manifest-sha256.txt"
 
     // initial assumptions
-    sha1Manifest.toJava should exist
+    sha1Manifest should exist
     bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA1)(u, v, w, x, y, z)
 
-    sha256Manifest.toJava should exist
+    sha256Manifest should exist
     bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA256)(u, v, w, x, y, z)
 
     // changes + save
@@ -454,9 +454,9 @@ class SaveSpec extends TestSupportFixture
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
-    sha1Manifest.toJava should exist
+    sha1Manifest should exist
     bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA1)(u, v, w, x, y, z)
-    sha256Manifest.toJava shouldNot exist
+    sha256Manifest shouldNot exist
 
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
@@ -480,7 +480,7 @@ class SaveSpec extends TestSupportFixture
     val sha1Manifest = bag / "manifest-sha1.txt"
 
     // initial assumptions
-    sha1Manifest.toJava should exist
+    sha1Manifest should exist
     bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA1)(u, v, w, x, y, z)
 
     // changes + save
@@ -494,7 +494,7 @@ class SaveSpec extends TestSupportFixture
 
     // expected results
     bag.data.list.toList shouldBe empty
-    sha1Manifest.toJava should exist
+    sha1Manifest should exist
     bag.baseDir should containInPayloadManifestFileOnly(ChecksumAlgorithm.SHA1)()
 
     // validate bag
