@@ -35,9 +35,7 @@ case class FilesXml private(private val files: mutable.Map[File, FilesXmlItem] =
   def add(item: FilesXmlItem): Try[FilesXml] = Try {
     this.get(item.filepath)
       .map(_ => throw new FileAlreadyExistsException(item.filepath.toString()))
-      .getOrElse {
-        FilesXml(files += (item.filepath -> item))
-      }
+      .getOrElse { FilesXml(files += (item.filepath -> item)) }
   }
 
   def add(file: File,
@@ -111,9 +109,7 @@ object FilesXml {
 
   def empty(): FilesXml = FilesXml()
 
-  def read(file: File): Try[FilesXml] = {
-    file.inputStream()(FilesXml.read)
-  }
+  def read(file: File): Try[FilesXml] = file.inputStream()(FilesXml.read)
 
   def read(inputStream: InputStream): Try[FilesXml] = {
     // TODO implemented in https://github.com/DANS-KNAW/dans-bag-lib/issues/15
