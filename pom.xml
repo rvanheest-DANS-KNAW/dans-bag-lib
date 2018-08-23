@@ -56,6 +56,12 @@
             <artifactId>dans-scala-lib_2.12</artifactId>
         </dependency>
 
+        <!-- logger -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
         <!-- apache commons -->
         <dependency>
             <groupId>commons-configuration</groupId>

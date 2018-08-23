@@ -91,7 +91,7 @@ object MetadataElementType extends Enumeration {
   //dc:
   val DC_CONTRIBUTOR : MetadataElementType = ElementType("dc", "contributor")
   val DC_COVERAGE    : MetadataElementType = ElementType("dc", "coverage")
-  val DC_CREATOR     : MetadataElementType = ElementType("dc", "created")
+  val DC_CREATOR     : MetadataElementType = ElementType("dc", "creator")
   val DC_DATE        : MetadataElementType = ElementType("dc", "date")
   val DC_DESCRIPTION : MetadataElementType = ElementType("dc", "description")
   val DC_FORMAT      : MetadataElementType = ElementType("dc", "format")
