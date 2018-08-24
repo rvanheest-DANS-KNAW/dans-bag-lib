@@ -22,6 +22,7 @@ import nl.knaw.dans.bag.v0.metadata.files.FileAccessCategory.FileAccessCategory
 
 import scala.util.Try
 
+// TODO use Path API instead, since these are relative paths
 case class FilesXmlItem(filepath: File,
                         mimetype: MimeType,
                         accessibleToRights: Option[FileAccessCategory] = Option.empty,

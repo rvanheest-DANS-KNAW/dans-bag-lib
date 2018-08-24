@@ -26,6 +26,7 @@ import nl.knaw.dans.lib.error.TryExtensions
 import scala.collection.mutable
 import scala.util.{ Failure, Try }
 
+// TODO use Path API instead, since these are relative paths
 case class FilesXml private(private val files: mutable.Map[File, FilesXmlItem] = mutable.Map.empty) {
 
   def list: Map[File, FilesXmlItem] = files.toMap

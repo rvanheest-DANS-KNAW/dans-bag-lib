@@ -21,6 +21,40 @@ import nl.knaw.dans.bag.v0.metadata.files.FilesXml
 
 import scala.util.Try
 
+/*
+ * problem: on the one hand, we don't want to make users of the API write nested code like below,
+ * but on the other hand, we also don't want to duplicate the methods of FilesXmlItem into Dans(V0)Bag
+ * which would imply tight coupling.
+ *
+ * this is not really what we want:
+ *   bag.updateMetadata(oldMetadata => oldMetadata
+ *          .updateFilesXml(oldFilesXml => oldFilesXml
+ *              .update(file, oldFilesXmlItem => oldFilesXmlItem
+ *                  .withAccessibleToRights(FileAccessCategory.RESTRICTED_GROUP))))
+ *
+ * but this would cause coupling:
+ *   bag.fileWithAccessibleToRight(file, FileAccessCategory.RESTRICTED_GROUP)
+ *
+ * a solution would be to have a FileUpdater with static methods
+ *   FileUpdater.updateFileAccessibleToRight(bag, file, FileAccessCategory.RESTRICTED_GROUP)
+ *
+ * which could be rewritten using implicits:
+ *   bag.updateFileAccessibleToRight(file, FileAccessCategory.RESTRICTED_GROUP)
+ *
+ * However, that might not really fit with the DansBag -> DansV0Bag model
+ *
+ *   // define implicit FileUpdater on DansBag, then you need to open up the access levels of the
+ *   // DansV0Bag fields to be able to access them from outside the v0 package.
+ *   implicit class FileUpdater(val bag: DansBag) extends AnyVal {
+ *     def updateFileAccessibleToRight(file: File, fac: FileAccessCategory): DansBag = ???
+ *   }
+ *
+ *   // define implicit FileUpdater on DansV0Bag, then you cannot use it from a DansBag instance
+ *   implicit class FileUpdater(val bag: DansV0Bag) extends AnyVal {
+ *     def updateFileAccessibleToRight(file: File, fac: FileAccessCategory): DansBag = ???
+ *   }
+ */
+
 class Metadata private(filesXml: FilesXml) {
 
   def getFilesXml: FilesXml = filesXml
