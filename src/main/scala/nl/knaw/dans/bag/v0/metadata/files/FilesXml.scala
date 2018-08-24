@@ -30,7 +30,13 @@ case class FilesXml private(private val files: mutable.Map[File, FilesXmlItem] =
 
   def list: Map[File, FilesXmlItem] = files.toMap
 
+  def getFiles: Iterable[File] = files.keys
+
+  def getItems: Iterable[FilesXmlItem] = files.values
+
   def get(file: File): Option[FilesXmlItem] = files.get(file)
+
+  def getInDirectory(dir: File): Iterable[FilesXmlItem] = files.filterKeys(dir.isParentOf).values
 
   def add(item: FilesXmlItem): Try[FilesXml] = Try {
     this.get(item.filepath)
