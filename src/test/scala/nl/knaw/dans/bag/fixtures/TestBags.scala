@@ -60,7 +60,7 @@ trait TestBags extends FileSystemSupport {
 
   protected def multipleManifestsBagV0(): v0.DansV0Bag = DansBag.read(multipleManifestsBagDirV0)
 
-  protected def oldFilesXmlBagV0(): v0.DansV0Bag = DansBag.read(oldFilesXmlBagDirV0())
+  protected def oldFilesXmlBagV0(): v0.DansV0Bag = DansBag.read(oldFilesXmlBagDirV0)
 
   protected def simpleBagV0(): v0.DansV0Bag = DansBag.read(simpleBagDirV0)
 }
