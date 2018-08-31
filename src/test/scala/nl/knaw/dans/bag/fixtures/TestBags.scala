@@ -24,9 +24,11 @@ import scala.util.{ Failure, Success, Try }
 trait TestBags extends FileSystemSupport {
   this: TestSupportFixture =>
 
+  protected val avBagDirV0: File = testDir / "bag-with-av-files"
   protected val fetchBagDirV0: File = testDir / "bag-with-fetch"
   protected val multipleKeysBagDirV0: File = testDir / "multiple-keys-in-baginfo"
   protected val multipleManifestsBagDirV0: File = testDir / "bag-with-multiple-manifests"
+  protected val oldFilesXmlBagDirV0: File = testDir / "bag-with-old-filesxml"
   protected val simpleBagDirV0: File = testDir / "simple-bag"
 
   override protected def beforeEach(): Unit = {
@@ -36,6 +38,8 @@ trait TestBags extends FileSystemSupport {
       "/test-bags/v0/multiple-keys-in-baginfo" -> multipleKeysBagDirV0 ::
       "/test-bags/v0/bag-with-multiple-manifests" -> multipleManifestsBagDirV0 ::
       "/test-bags/v0/bag-with-fetch" -> fetchBagDirV0 ::
+      "/test-bags/v0/bag-with-av-files" -> avBagDirV0 ::
+      "/test-bags/v0/bag-with-old-filesxml" -> oldFilesXmlBagDirV0 ::
       Nil
 
     for ((src, target) <- bags)
@@ -48,11 +52,15 @@ trait TestBags extends FileSystemSupport {
     case Failure(e) => throw e
   }
 
+  protected def avBagV0(): v0.DansV0Bag = DansBag.read(avBagDirV0)
+
   protected def fetchBagV0(): v0.DansV0Bag = DansBag.read(fetchBagDirV0)
 
   protected def multipleKeysBagV0(): v0.DansV0Bag = DansBag.read(multipleKeysBagDirV0)
 
   protected def multipleManifestsBagV0(): v0.DansV0Bag = DansBag.read(multipleManifestsBagDirV0)
+
+  protected def oldFilesXmlBagV0(): v0.DansV0Bag = DansBag.read(oldFilesXmlBagDirV0())
 
   protected def simpleBagV0(): v0.DansV0Bag = DansBag.read(simpleBagDirV0)
 }
