@@ -16,56 +16,43 @@
 package nl.knaw.dans.bag.v0.metadata.files
 
 import java.io.InputStream
-import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException }
+import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException, Path }
 
 import better.files.File
+import nl.knaw.dans.bag.MimeType
 import nl.knaw.dans.bag.v0.metadata.MetadataElement
-import nl.knaw.dans.bag.v0.metadata.files.FileAccessCategory.FileAccessCategory
-import nl.knaw.dans.lib.error.TryExtensions
+import nl.knaw.dans.bag.FileAccessCategory.FileAccessCategory
 
 import scala.collection.mutable
 import scala.util.{ Failure, Try }
 
-// TODO use Path API instead, since these are relative paths
-case class FilesXml private(private val files: mutable.Map[File, FilesXmlItem] = mutable.Map.empty) {
+case class FilesXml private(private val files: mutable.Map[Path, FilesXmlItem] = mutable.Map.empty) {
 
-  def list: Map[File, FilesXmlItem] = files.toMap
+  def list: Map[Path, FilesXmlItem] = files.toMap
 
-  def getFiles: Iterable[File] = files.keys
+  def getFiles: Iterable[Path] = files.keys
 
   def getItems: Iterable[FilesXmlItem] = files.values
 
-  def get(file: File): Option[FilesXmlItem] = files.get(file)
+  def get(file: Path): Option[FilesXmlItem] = files.get(file)
 
-  def getInDirectory(dir: File): Iterable[FilesXmlItem] = files.filterKeys(dir.isParentOf).values
+  def getInDirectory(dir: Path): Iterable[FilesXmlItem] = {
+    files.filterKeys(_ startsWith dir).values
+  }
 
   def add(item: FilesXmlItem): Try[FilesXml] = Try {
     this.get(item.filepath)
-      .map(_ => throw new FileAlreadyExistsException(item.filepath.toString()))
+      .map(_ => throw new FileAlreadyExistsException(item.filepath.toString))
       .getOrElse { FilesXml(files += (item.filepath -> item)) }
   }
 
-  def add(file: File,
-          accessibleToRights: Option[FileAccessCategory] = Option.empty,
-          visibleToRights: Option[FileAccessCategory] = Option.empty,
-          metadataElements: Seq[MetadataElement] = Seq.empty): Try[FilesXml] = {
-    if (file.notExists)
-      Failure(new NoSuchFileException(file.toString()))
-    else
-      for {
-        mimetype <- MimeType.get(file)
-        item = FilesXmlItem(file, mimetype, accessibleToRights, visibleToRights, metadataElements)
-        newFilesXml <- this.add(item)
-      } yield newFilesXml
-  }
-
-  def remove(file: File): Try[FilesXml] = Try {
+  def remove(file: Path): Try[FilesXml] = Try {
     this.get(file)
       .map(_ => FilesXml(files -= file))
-      .getOrElse { throw new NoSuchFileException(file.toString()) }
+      .getOrElse { throw new NoSuchFileException(file.toString) }
   }
 
-  def update(file: File, f: FilesXmlItem => FilesXmlItem): Try[FilesXml] = {
+  def update(file: Path, f: FilesXmlItem => FilesXmlItem): Try[FilesXml] = {
     this.get(file)
       .map(item => {
         for {
@@ -77,34 +64,34 @@ case class FilesXml private(private val files: mutable.Map[File, FilesXmlItem] =
       .getOrElse(Failure(new NoSuchElementException(s"could not find file $file")))
   }
 
-  def move(file: File, dest: File): Try[FilesXml] = {
-    this.update(file, item => item.move(dest))
+  def move(file: Path, dest: Path): Try[FilesXml] = {
+    this.update(file, _ moveTo dest)
   }
 
-  def updateMimetype(file: File): Try[FilesXml] = {
-    this.update(file, _.updateMimetype().unsafeGetOrThrow)
+  def updateMimetype(file: Path, mimetype: MimeType): Try[FilesXml] = {
+    this.update(file, _ updateMimetype mimetype)
   }
 
-  def withAccessibleToRights(file: File, access: FileAccessCategory): Try[FilesXml] = {
-    this.update(file, _.withAccessibleToRights(access))
+  def withAccessibleToRights(file: Path, access: FileAccessCategory): Try[FilesXml] = {
+    this.update(file, _ withAccessibleToRights access)
   }
 
-  def withoutAccessibleToRights(file: File): Try[FilesXml] = {
+  def withoutAccessibleToRights(file: Path): Try[FilesXml] = {
     this.update(file, _.withoutAccessibleToRights)
   }
 
-  def withVisibleToRights(file: File, access: FileAccessCategory): Try[FilesXml] = {
-    this.update(file, _.withVisibleToRights(access))
+  def withVisibleToRights(file: Path, access: FileAccessCategory): Try[FilesXml] = {
+    this.update(file, _ withVisibleToRights access)
   }
 
-  def withoutVisibleToRights(file: File): Try[FilesXml] = {
+  def withoutVisibleToRights(file: Path): Try[FilesXml] = {
     this.update(file, _.withoutVisibleToRights)
   }
 
-  def updateMetadataElements(file: File,
-                             f: Seq[MetadataElement] => Seq[MetadataElement]): Try[FilesXml] = {
-    this.update(file, _.updateMetadataElements(f))
-  }
+//  def updateMetadataElements(file: Path,
+//                             f: Seq[MetadataElement] => Seq[MetadataElement]): Try[FilesXml] = {
+//    this.update(file, _ updateMetadataElements f)
+//  }
 
   def save(file: File): Try[Unit] = {
     // TODO implemented in https://github.com/DANS-KNAW/dans-bag-lib/issues/15

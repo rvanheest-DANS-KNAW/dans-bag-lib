@@ -25,12 +25,15 @@ import better.files.File
 import gov.loc.repository.bagit.domain.{ Version => LocVersion }
 import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
 import nl.knaw.dans.bag.v0.DansV0Bag
+import nl.knaw.dans.bag.v0.metadata.MetadataElement
 import org.joda.time.DateTime
 
 import scala.language.implicitConversions
 import scala.util.Try
 
 trait DansBag {
+
+  type PayloadFileMetadata <: FileMetadata
 
   /**
    * The base directory of the bag this object represents
@@ -793,6 +796,283 @@ trait DansBag {
    * @return this bag, without the tag manifest entries for the removed file
    */
   def removeTagFile(pathInBag: Path): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @return
+   */
+  def getFileMetadata: Map[File, PayloadFileMetadata]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @return
+   */
+  def getFiles: Iterable[File]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @return
+   */
+  def getFileMetadataItems: Iterable[PayloadFileMetadata]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param file
+   * @return
+   */
+  def getFileMetadata(file: RelativePath): Option[PayloadFileMetadata]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def getFileMetadata(path: Path): Option[PayloadFileMetadata]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param dir
+   * @return
+   */
+  def getFileMetadataInDirectory(dir: RelativePath): Iterable[PayloadFileMetadata]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param dir
+   * @return
+   */
+  def getFileMetadataInDirectory(dir: Path): Iterable[PayloadFileMetadata]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param src
+   * @param dest
+   * @return
+   */
+  def movePayloadFile(src: RelativePath, dest: RelativePath): DansBag
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param src
+   * @param dest
+   * @return
+   */
+  def movePayloadFile(src: Path, dest: Path): DansBag
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param src
+   * @param dest
+   * @return
+   */
+  def moveFetchFile(src: RelativePath, dest: RelativePath): DansBag
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param src
+   * @param dest
+   * @return
+   */
+  def moveFetchFile(src: Path, dest: Path): DansBag
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param src
+   * @param dest
+   * @return
+   */
+  def moveFetchFile(src: URL, dest: RelativePath): DansBag
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param src
+   * @param dest
+   * @return
+   */
+  def moveFetchFile(src: URL, dest: Path): DansBag
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def updateMimetype(path: RelativePath): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def updateMimetype(path: Path): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def setAccessibleToRights(path: RelativePath): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def setAccessibleToRights(path: Path): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def removeAccessibleToRights(path: RelativePath): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def removeAccessibleToRights(path: Path): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def setVisibleToRights(path: RelativePath): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def setVisibleToRights(path: Path): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def removeVisibleToRights(path: RelativePath): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @return
+   */
+  def removeVisibleToRights(path: Path): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @param elem
+   * @return
+   */
+  def addFileMetadata(path: RelativePath, elem: MetadataElement): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @param elem
+   * @return
+   */
+  def addFileMetadata(path: Path, elem: MetadataElement): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @param elem
+   * @return
+   */
+  def removeFileMetadata(path: RelativePath, elem: MetadataElement): Try[DansBag]
+
+  // TODO document
+  // TODO implement
+  // TODO test
+  /**
+   *
+   * @param path
+   * @param elem
+   * @return
+   */
+  def removeFileMetadata(path: Path, elem: MetadataElement): Try[DansBag]
 
   /**
    * Save all changes made to this bag (using the above methods) to the file system.

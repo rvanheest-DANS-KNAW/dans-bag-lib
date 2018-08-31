@@ -50,10 +50,12 @@
         <dependency>
             <groupId>com.github.pathikrit</groupId>
             <artifactId>better-files_2.12</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>nl.knaw.dans.lib</groupId>
-            <artifactId>dans-scala-lib_2.12</artifactId>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-xml_2.12</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- logger -->

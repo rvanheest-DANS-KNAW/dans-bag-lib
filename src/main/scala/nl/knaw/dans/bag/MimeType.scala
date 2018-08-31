@@ -13,9 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.bag.v0.metadata
+package nl.knaw.dans.bag
 
-package object files {
+import better.files.File
+import org.apache.tika.Tika
 
-  type MimeType = String
+import scala.util.Try
+
+object MimeType {
+  private val tika = new Tika
+
+  /**
+   * Identify the mimeType of a path.
+   *
+   * @param file the file to identify
+   * @return the mimeType of the path if the identification was successful; `Failure` otherwise
+   */
+  def get(file: File): Try[MimeType] = Try {
+    tika.detect(file.path)
+  }
 }

@@ -24,6 +24,7 @@ import scala.language.implicitConversions
 package object bag {
 
   type RelativePath = File => File
+  type MimeType = String
 
   implicit def betterFileToPath(file: File): Path = file.path
 }

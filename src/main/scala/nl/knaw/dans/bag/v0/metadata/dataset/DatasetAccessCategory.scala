@@ -15,8 +15,8 @@
  */
 package nl.knaw.dans.bag.v0.metadata.dataset
 
-import nl.knaw.dans.bag.v0.metadata.files.FileAccessCategory
-import nl.knaw.dans.bag.v0.metadata.files.FileAccessCategory.FileAccessCategory
+import nl.knaw.dans.bag.FileAccessCategory
+import nl.knaw.dans.bag.FileAccessCategory.FileAccessCategory
 
 object DatasetAccessCategory extends Enumeration {
   type DatasetAccessCategory = Value

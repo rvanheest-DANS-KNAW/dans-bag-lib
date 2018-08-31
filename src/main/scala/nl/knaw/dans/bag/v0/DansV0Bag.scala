@@ -29,6 +29,8 @@ import gov.loc.repository.bagit.util.PathUtils
 import gov.loc.repository.bagit.verify.{ BagVerifier, FileCountAndTotalSizeVistor }
 import gov.loc.repository.bagit.writer.{ BagitFileWriter, FetchWriter, ManifestWriter, MetadataWriter }
 import nl.knaw.dans.bag.ChecksumAlgorithm.{ ChecksumAlgorithm, locDeconverter }
+import nl.knaw.dans.bag.v0.metadata.files.FilesXmlItem
+import nl.knaw.dans.bag.v0.metadata.{ Metadata, MetadataElement }
 import nl.knaw.dans.bag.{ ChecksumAlgorithm, DansBag, FetchItem, RelativePath, betterFileToPath }
 import org.joda.time.DateTime
 import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
@@ -39,7 +41,10 @@ import scala.collection.mutable
 import scala.language.{ implicitConversions, postfixOps }
 import scala.util.{ Failure, Success, Try }
 
-class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
+class DansV0Bag private(private[v0] val locBag: LocBag,
+                        metadata: Metadata = Metadata.empty()) extends DansBag {
+
+  override type PayloadFileMetadata = FilesXmlItem
 
   override def equals(obj: Any): Boolean = locBag.equals(obj)
 
@@ -655,6 +660,172 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
    */
   override def removeTagFile(pathInBag: Path): Try[DansV0Bag] = {
     removeTagFile(_ / pathInBag.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def getFileMetadata: Map[File, FilesXmlItem] = ???
+//    metadata.getFilesXml.list.map { case (path, md) => baseDir / path.toString -> md }
+
+  /**
+   * @inheritdoc
+   */
+  override def getFiles: Seq[File] = ???
+//    metadata.getFilesXml.getFiles.map(baseDir / _.toString)
+
+  /**
+   * @inheritdoc
+   */
+  override def getFileMetadataItems: Seq[FilesXmlItem] = ???
+//    metadata.getFilesXml.getItems
+
+  /**
+   * @inheritdoc
+   */
+  override def getFileMetadata(file: RelativePath): Option[FilesXmlItem] = ???
+//    // TODO test that this file exists, fail otherwise
+//    metadata.getFilesXml.get(baseDir relativize file)
+
+  /**
+   * @inheritdoc
+   */
+  override def getFileMetadata(file: Path): Option[FilesXmlItem] = {
+    getFileMetadata(_ / file.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def getFileMetadataInDirectory(dir: RelativePath): Seq[FilesXmlItem] = ???
+//    // TODO test that this directory exists, fail otherwise
+//    metadata.getFilesXml.getInDirectory(baseDir relativize dir)
+
+  /**
+   * @inheritdoc
+   */
+  override def getFileMetadataInDirectory(dir: Path): Seq[FilesXmlItem] = {
+    getFileMetadataInDirectory(_ / dir.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def movePayloadFile(src: RelativePath, dest: RelativePath): DansBag = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def movePayloadFile(src: Path, dest: Path): DansBag = {
+    movePayloadFile(_ / src.toString, _ / dest.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def moveFetchFile(src: RelativePath, dest: RelativePath): DansBag = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def moveFetchFile(src: Path, dest: Path): DansBag = {
+    moveFetchFile(_ / src.toString, _ / dest.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def moveFetchFile(src: URL, dest: RelativePath): DansBag = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def moveFetchFile(src: URL, dest: Path): DansBag = {
+    moveFetchFile(src, (base: File) => base / dest.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def updateMimetype(path: RelativePath): Try[DansBag] = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def updateMimetype(path: Path): Try[DansBag] = {
+    updateMimetype(_ / path.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def setAccessibleToRights(path: RelativePath): Try[DansBag] = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def setAccessibleToRights(path: Path): Try[DansBag] = {
+    setAccessibleToRights(_ / path.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def removeAccessibleToRights(path: RelativePath): Try[DansBag] = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def removeAccessibleToRights(path: Path): Try[DansBag] = {
+    removeAccessibleToRights(_ / path.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def setVisibleToRights(path: RelativePath): Try[DansBag] = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def setVisibleToRights(path: Path): Try[DansBag] = {
+    setVisibleToRights(_ / path.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def removeVisibleToRights(path: RelativePath): Try[DansBag] = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def removeVisibleToRights(path: Path): Try[DansBag] = {
+    removeVisibleToRights(_ / path.toString)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def addFileMetadata(path: RelativePath, elem: MetadataElement): Try[DansBag] = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def addFileMetadata(path: Path, elem: MetadataElement): Try[DansBag] = {
+    addFileMetadata(_ / path.toString, elem)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def removeFileMetadata(path: RelativePath, elem: MetadataElement): Try[DansBag] = ???
+
+  /**
+   * @inheritdoc
+   */
+  override def removeFileMetadata(path: Path, elem: MetadataElement): Try[DansBag] = {
+    removeFileMetadata(_ / path.toString, elem)
   }
 
   /**

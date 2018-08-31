@@ -15,50 +15,51 @@
  */
 package nl.knaw.dans.bag.v0.metadata.files
 
-import better.files.File
+import java.nio.file.Path
+
+import nl.knaw.dans.bag.FileAccessCategory.FileAccessCategory
+import nl.knaw.dans.bag.{ FileMetadata, MimeType }
 import nl.knaw.dans.bag.v0.metadata.MetadataElement
 import nl.knaw.dans.bag.v0.metadata.MetadataElementType.MetadataElementType
-import nl.knaw.dans.bag.v0.metadata.files.FileAccessCategory.FileAccessCategory
 
-import scala.util.Try
+import scala.xml.Node
 
-// TODO use Path API instead, since these are relative paths
-case class FilesXmlItem(filepath: File,
+case class FilesXmlItem(filepath: Path,
                         mimetype: MimeType,
-                        accessibleToRights: Option[FileAccessCategory] = Option.empty,
-                        visibleToRights: Option[FileAccessCategory] = Option.empty,
-                        metadataElements: Seq[MetadataElement] = Seq.empty) {
+                        override val accessibleToRights: Option[FileAccessCategory] = Option.empty,
+                        override val visibleToRights: Option[FileAccessCategory] = Option.empty,
+//                        metadataElements: Seq[MetadataElement] = Seq.empty
+                        elem: Node) extends FileMetadata {
 
-  def move(dest: File): FilesXmlItem = {
+  override def moveTo(dest: Path): FilesXmlItem = {
     this.copy(filepath = dest)
   }
 
-  def updateMimetype(): Try[FilesXmlItem] = {
-    MimeType.get(filepath)
-      .map(newMimetype => this.copy(mimetype = newMimetype))
+  override def updateMimetype(mimetype: MimeType): FilesXmlItem = {
+    this.copy(mimetype = mimetype)
   }
 
-  def withAccessibleToRights(access: FileAccessCategory): FilesXmlItem = {
+  override def withAccessibleToRights(access: FileAccessCategory): FilesXmlItem = {
     this.copy(accessibleToRights = Option(access))
   }
 
-  def withoutAccessibleToRights: FilesXmlItem = {
+  override def withoutAccessibleToRights: FilesXmlItem = {
     this.copy(accessibleToRights = Option.empty)
   }
 
-  def withVisibleToRights(visible: FileAccessCategory): FilesXmlItem = {
+  override def withVisibleToRights(visible: FileAccessCategory): FilesXmlItem = {
     this.copy(visibleToRights = Option(visible))
   }
 
-  def withoutVisibleToRights: FilesXmlItem = {
+  override def withoutVisibleToRights: FilesXmlItem = {
     this.copy(visibleToRights = Option.empty)
   }
 
-  def getMetadataElement(metadataElementType: MetadataElementType): Seq[MetadataElement] = {
-    metadataElements.filter(_.tag == metadataElementType)
-  }
-
-  def updateMetadataElements(f: Seq[MetadataElement] => Seq[MetadataElement]): FilesXmlItem = {
-    this.copy(metadataElements = f(metadataElements))
-  }
+//  def getMetadataElement(metadataElementType: MetadataElementType): Seq[MetadataElement] = {
+//    metadataElements.filter(_.tag == metadataElementType)
+//  }
+//
+//  def updateMetadataElements(f: Seq[MetadataElement] => Seq[MetadataElement]): FilesXmlItem = {
+//    this.copy(metadataElements = f(metadataElements))
+//  }
 }

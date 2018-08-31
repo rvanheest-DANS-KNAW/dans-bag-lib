@@ -13,23 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.bag.v0.metadata.files
+package nl.knaw.dans.bag
 
-import better.files.File
-import org.apache.tika.Tika
+object FileAccessCategory extends Enumeration {
+  type FileAccessCategory = Value
 
-import scala.util.Try
-
-object MimeType {
-  private val tika = new Tika
-
-  /**
-   * Identify the mimeType of a path.
-   *
-   * @param file the file to identify
-   * @return the mimeType of the path if the identification was successful; `Failure` otherwise
-   */
-  def get(file: File): Try[MimeType] = Try {
-    tika.detect(file.path)
-  }
+  // @formatter:off
+  val ANONYMOUS          : FileAccessCategory = Value
+  val RESTRICTED_GROUP   : FileAccessCategory = Value
+  val RESTRICTED_REQUEST : FileAccessCategory = Value
+  val KNOWN              : FileAccessCategory = Value
+  val NONE               : FileAccessCategory = Value
+  // @formatter:on
 }
