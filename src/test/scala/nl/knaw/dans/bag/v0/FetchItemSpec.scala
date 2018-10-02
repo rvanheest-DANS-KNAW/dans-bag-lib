@@ -19,7 +19,7 @@ import java.net.{ SocketTimeoutException, URL, UnknownHostException }
 import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException, Paths }
 
 import nl.knaw.dans.bag.fixtures._
-import nl.knaw.dans.bag.{ ChecksumAlgorithm, FetchItem, RelativePath, betterFileToPath }
+import nl.knaw.dans.bag.{ ChecksumAlgorithm, FetchItem, betterFileToPath }
 import org.scalatest.tagobjects.Retryable
 
 import scala.collection.JavaConverters._
@@ -52,13 +52,13 @@ class FetchItemSpec extends TestSupportFixture
     simpleBagV0().fetchFiles shouldBe empty
   }
 
-  "addFetchItem with RelativePath" should "add the fetch item to the bag's list of fetch items" taggedAs Retryable in {
+  "addFetchItem" should "add the fetch item to the bag's list of fetch items" taggedAs Retryable in {
     val fetchFileSrc = lipsum1URL
     assumeCanConnect(fetchFileSrc)
 
     val bag = fetchBagV0()
 
-    inside(bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum1.txt")) {
+    inside(bag.addFetchItem(fetchFileSrc, Paths.get("to-be-fetched/lipsum1.txt"))) {
       case Success(resultBag) =>
         resultBag.fetchFiles should contain(
           FetchItem(fetchFileSrc, lipsum1Size, bag.data / "to-be-fetched" / "lipsum1.txt")
@@ -76,7 +76,7 @@ class FetchItemSpec extends TestSupportFixture
       ChecksumAlgorithm.SHA1,
       ChecksumAlgorithm.SHA256,
     )
-    inside(bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum3.txt")) {
+    inside(bag.addFetchItem(fetchFileSrc, Paths.get("to-be-fetched/lipsum3.txt"))) {
       case Success(resultBag) =>
         val destination = resultBag.data / "to-be-fetched" / "lipsum3.txt"
         resultBag.payloadManifests(ChecksumAlgorithm.SHA1) should contain(destination -> lipsum2Sha1)
@@ -92,7 +92,7 @@ class FetchItemSpec extends TestSupportFixture
 
     val beforeListing = bag.listRecursively.toList
 
-    inside(bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum4.txt")) {
+    inside(bag.addFetchItem(fetchFileSrc, Paths.get("to-be-fetched/lipsum4.txt"))) {
       case Success(resultBag) =>
         val afterListing = resultBag.listRecursively.toList
 
@@ -112,7 +112,7 @@ class FetchItemSpec extends TestSupportFixture
         manifest should not contain key(bag.baseDir / "fetch.txt")
     }
 
-    inside(bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum5.txt")) {
+    inside(bag.addFetchItem(fetchFileSrc, Paths.get("to-be-fetched/lipsum5.txt"))) {
       case Success(resultBag) =>
         forEvery(resultBag.tagManifests) {
           case (_, manifest) =>
@@ -125,7 +125,7 @@ class FetchItemSpec extends TestSupportFixture
     val bag = simpleBagV0()
     val fetchFileSrc = lipsum4URL
 
-    bag.addFetchItem(fetchFileSrc, _ / "x") should matchPattern {
+    bag.addFetchItem(fetchFileSrc, Paths.get("x")) should matchPattern {
       case Failure(e: FileAlreadyExistsException) if e.getMessage == (bag.data / "x: already exists in payload").toString =>
     }
   }
@@ -136,9 +136,9 @@ class FetchItemSpec extends TestSupportFixture
 
     val bag = fetchBagV0()
 
-    bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum1.txt")
+    bag.addFetchItem(fetchFileSrc, Paths.get("to-be-fetched/lipsum1.txt"))
 
-    bag.addFetchItem(fetchFileSrc, _ / "to-be-fetched" / "lipsum1.txt") should matchPattern {
+    bag.addFetchItem(fetchFileSrc, Paths.get("to-be-fetched/lipsum1.txt")) should matchPattern {
       case Failure(e: FileAlreadyExistsException) if e.getMessage == (bag.data / "to-be-fetched/lipsum1.txt: already exists in fetch.txt").toString =>
     }
   }
@@ -147,7 +147,7 @@ class FetchItemSpec extends TestSupportFixture
     val bag = simpleBagV0()
     val fetchFileSrc = lipsum5URL
 
-    bag.addFetchItem(fetchFileSrc, _ / ".." / "lipsum1.txt") should matchPattern {
+    bag.addFetchItem(fetchFileSrc, Paths.get("../lipsum1.txt")) should matchPattern {
       case Failure(e: IllegalArgumentException) if e.getMessage == s"a fetch file can only point to a location inside the bag/data directory; ${ bag / "lipsum1.txt" } is outside the data directory" =>
     }
   }
@@ -155,7 +155,7 @@ class FetchItemSpec extends TestSupportFixture
   it should "fail when the file cannot be downloaded from the provided url" in {
     val bag = simpleBagV0()
 
-    inside(bag.addFetchItem(new URL("http://x"), _ / "to-be-fetched" / "failing-url.txt")) {
+    inside(bag.addFetchItem(new URL("http://x"), Paths.get("to-be-fetched/failing-url.txt"))) {
       // it's either one of these exceptions that is thrown
       case Failure(e: SocketTimeoutException) =>
         e should have message "connect timed out"
@@ -164,24 +164,10 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  "addFetchItem with java.nio.file.Path" should "forward to the overload with RelativePath" taggedAs Retryable in {
-    val fetchFileSrc = lipsum1URL
-    assumeCanConnect(fetchFileSrc)
-
+  "removeFetchItem" should "remove the fetch item from the list" in {
     val bag = fetchBagV0()
-
-    inside(bag.addFetchItem(fetchFileSrc, Paths.get("to-be-fetched/lipsum1.txt"))) {
-      case Success(resultBag) =>
-        resultBag.fetchFiles should contain(
-          FetchItem(fetchFileSrc, lipsum1Size, bag.data / "to-be-fetched" / "lipsum1.txt")
-        )
-    }
-  }
-
-  "removeFetchItem with RelativePath" should "remove the fetch item from the list" in {
-    val bag = fetchBagV0()
-    val relativePath: RelativePath = _ / "x"
-    val absolutePath = relativePath(bag.data)
+    val relativePath = Paths.get("x")
+    val absolutePath = bag.data / relativePath.toString
 
     bag.fetchFiles.map(_.file) should contain(absolutePath)
 
@@ -193,8 +179,8 @@ class FetchItemSpec extends TestSupportFixture
 
   it should "remove the fetch item from all payload manifests" in {
     val bag = fetchBagV0()
-    val relativePath: RelativePath = _ / "x"
-    val absolutePath = relativePath(bag.data)
+    val relativePath = Paths.get("x")
+    val absolutePath = bag.data / relativePath.toString
 
     forEvery(bag.payloadManifests) {
       case (_, manifest) =>
@@ -213,10 +199,10 @@ class FetchItemSpec extends TestSupportFixture
   it should "remove fetch.txt from all tag manifests when the last fetch file was removed" in {
     val bag = fetchBagV0()
 
-    val relativePath1: RelativePath = _ / "x"
-    val relativePath2: RelativePath = _ / "y-old"
-    val relativePath3: RelativePath = _ / "sub" / "u"
-    val relativePath4: RelativePath = _ / "sub" / "v"
+    val relativePath1 = Paths.get("x")
+    val relativePath2 = Paths.get("y-old")
+    val relativePath3 = Paths.get("sub/u")
+    val relativePath4 = Paths.get("sub/v")
 
     forEvery(bag.tagManifests) {
       case (_, manifest) =>
@@ -239,8 +225,8 @@ class FetchItemSpec extends TestSupportFixture
 
   it should "fail when the fetch item is not a part of the bag" in {
     val bag = fetchBagV0()
-    val relativePath: RelativePath = _ / "not-existing-fetch-file"
-    val absolutePath = relativePath(bag.data)
+    val relativePath = Paths.get("not-existing-fetch-file")
+    val absolutePath = bag.data / relativePath.toString
 
     bag.fetchFiles.map(_.file) should not contain absolutePath
 
@@ -248,19 +234,6 @@ class FetchItemSpec extends TestSupportFixture
       case Failure(e: NoSuchFileException) =>
         e should have message absolutePath.toString
         bag.fetchFiles.map(_.file) should not contain absolutePath
-    }
-  }
-
-  "removeFetchItem with java.nio.file.Path" should "forward to the overload with RelativePath" in {
-    val bag = fetchBagV0()
-    val relativePath: RelativePath = _ / "x"
-    val absolutePath = relativePath(bag.data)
-
-    bag.fetchFiles.map(_.file) should contain(absolutePath)
-
-    inside(bag.removeFetchItem(Paths.get("x"))) {
-      case Success(resultBag) =>
-        resultBag.fetchFiles.map(_.file) should not contain absolutePath
     }
   }
 
@@ -402,12 +375,12 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
-  "replaceFileWithFetchItem with RelativePath" should "remove the file from the payload" in {
+  "replaceFileWithFetchItem" should "remove the file from the payload" in {
     val bag = fetchBagV0()
 
     (bag.data / "y") should exist
 
-    inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://y"))) {
       case Success(resultBag) =>
         (resultBag.data / "y") shouldNot exist
     }
@@ -418,7 +391,7 @@ class FetchItemSpec extends TestSupportFixture
 
     (bag.data / "more" / "files" / "abc") should exist
 
-    inside(bag.replaceFileWithFetchItem(_ / "more" / "files" / "abc", new URL("http://abc"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("more/files/abc"), new URL("http://abc"))) {
       case Success(resultBag) =>
         (resultBag.data / "more" / "files" / "abc") shouldNot exist
         (resultBag.data / "more" / "files") shouldNot exist
@@ -435,7 +408,7 @@ class FetchItemSpec extends TestSupportFixture
         manifest should contain key (bag.data / "y")
     }
 
-    inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://y"))) {
       case Success(resultBag) =>
         forEvery(resultBag.payloadManifests) {
           case (_, manifest) =>
@@ -450,7 +423,7 @@ class FetchItemSpec extends TestSupportFixture
 
     bag.fetchFiles.map(_.file) shouldNot contain(bag.data / "y")
 
-    inside(bag.replaceFileWithFetchItem(_ / "y", new URL("http://y"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://y"))) {
       case Success(resultBag) =>
         resultBag.fetchFiles should contain(FetchItem(new URL("http://y"), yBytes, resultBag.data / "y"))
     }
@@ -461,7 +434,7 @@ class FetchItemSpec extends TestSupportFixture
 
     (bag.data / "no-such-file.txt") shouldNot exist
 
-    inside(bag.replaceFileWithFetchItem(_ / "no-such-file.txt", new URL("http://xxx"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("no-such-file.txt"), new URL("http://xxx"))) {
       case Failure(e: NoSuchFileException) =>
         e should have message (bag.data / "no-such-file.txt").toString()
     }
@@ -470,7 +443,7 @@ class FetchItemSpec extends TestSupportFixture
   it should "fail when the file is not inside the bag/data directory" in {
     val bag = fetchBagV0()
 
-    inside(bag.replaceFileWithFetchItem(_ / ".." / "fetch.txt", new URL("http://xxx"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("../fetch.txt"), new URL("http://xxx"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"a fetch file can only point to a location inside the bag/data directory; ${ bag / "fetch.txt" } is outside the data directory"
     }
@@ -479,47 +452,13 @@ class FetchItemSpec extends TestSupportFixture
   it should "fail when the url another protocol than 'http' or 'https'" in {
     val bag = fetchBagV0()
 
-    inside(bag.replaceFileWithFetchItem(_ / "y", (testDir / "y-new-location").url)) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("y"), (testDir / "y-new-location").url)) {
       case Failure(e: IllegalArgumentException) =>
         e should have message "url can only have protocol 'http' or 'https'"
     }
   }
 
-  "replaceFileWithFetchItem with java.nio.file.Path" should "forward to the overload with RelativePath" in {
-    val bag = fetchBagV0()
-
-    (bag.data / "y") should exist
-
-    inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://y"))) {
-      case Success(resultBag) =>
-        (resultBag.data / "y") shouldNot exist
-    }
-  }
-
-  "replaceFetchItemWithFile with RelativePath" should "resolve a fetch item by file" taggedAs Retryable in {
-    assumeCanConnect(lipsum4URL)
-
-    val bag = fetchBagV0()
-    val x = bag.data / "x"
-
-    x shouldNot exist
-
-    inside(bag.replaceFetchItemWithFile(_ / "x")) {
-      case Success(_) =>
-        x should exist
-    }
-  }
-
-  it should "fail when the file to be resolved does not occur in the list of fetch files" in {
-    val bag = fetchBagV0()
-
-    inside(bag.replaceFetchItemWithFile(_ / "non-existing-file")) {
-      case Failure(e: IllegalArgumentException) =>
-        e should have message s"path ${ bag.data / "non-existing-file" } does not occur in the list of fetch files"
-    }
-  }
-
-  "replaceFetchItemWithFile with java.nio.file.Path" should "forward to the overload with RelativePath" taggedAs Retryable in {
+  "replaceFetchItemWithFile with Path" should "resolve a fetch item by file" taggedAs Retryable in {
     assumeCanConnect(lipsum4URL)
 
     val bag = fetchBagV0()
@@ -533,12 +472,21 @@ class FetchItemSpec extends TestSupportFixture
     }
   }
 
+  it should "fail when the file to be resolved does not occur in the list of fetch files" in {
+    val bag = fetchBagV0()
+
+    inside(bag.replaceFetchItemWithFile(Paths.get("non-existing-file"))) {
+      case Failure(e: IllegalArgumentException) =>
+        e should have message s"path ${ bag.data / "non-existing-file" } does not occur in the list of fetch files"
+    }
+  }
+
   "replaceFetchItemWithFile with URL" should "resolve a fetch item by url" taggedAs Retryable in {
     assumeCanConnect(lipsum4URL)
 
     val bag = fetchBagV0()
     val url = lipsum4URL
-    val path = lipsum4Dest(bag.data)
+    val path = bag.data / lipsum4Dest.toString
 
     path shouldNot exist
 
