@@ -29,7 +29,7 @@ import gov.loc.repository.bagit.util.PathUtils
 import gov.loc.repository.bagit.verify.{ BagVerifier, FileCountAndTotalSizeVistor }
 import gov.loc.repository.bagit.writer.{ BagitFileWriter, FetchWriter, ManifestWriter, MetadataWriter }
 import nl.knaw.dans.bag.ChecksumAlgorithm.{ ChecksumAlgorithm, locDeconverter }
-import nl.knaw.dans.bag.{ ChecksumAlgorithm, DansBag, FetchItem, RelativePath, betterFileToPath }
+import nl.knaw.dans.bag.{ ChecksumAlgorithm, DansBag, FetchItem, betterFileToPath }
 import org.joda.time.DateTime
 import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
 
@@ -217,8 +217,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def addFetchItem(url: URL, pathInData: RelativePath): Try[DansV0Bag] = Try {
-    val destinationPath = pathInData(data)
+  override def addFetchItem(url: URL, pathInData: Path): Try[DansV0Bag] = Try {
+    val destinationPath = data / pathInData.toString
     var length: Long = 0L
 
     if (destinationPath.exists)
@@ -255,26 +255,12 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def addFetchItem(url: URL, pathInData: Path): Try[DansV0Bag] = {
-    addFetchItem(url, _ / pathInData.toString)
-  }
-
-  /**
-   * @inheritdoc
-   */
-  override def removeFetchItem(pathInData: RelativePath): Try[DansV0Bag] = Try {
-    val destinationPath = pathInData(data)
+  override def removeFetchItem(pathInData: Path): Try[DansV0Bag] = Try {
+    val destinationPath = data / pathInData.toString
 
     fetchFiles.find(_.file == destinationPath)
       .map(removeFetchItem)
       .getOrElse { throw new NoSuchFileException(destinationPath.toString) }
-  }
-
-  /**
-   * @inheritdoc
-   */
-  override def removeFetchItem(pathInData: Path): Try[DansV0Bag] = {
-    removeFetchItem(_ / pathInData.toString)
   }
 
   /**
@@ -306,8 +292,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def replaceFileWithFetchItem(pathInData: RelativePath, url: URL): Try[DansV0Bag] = Try {
-    val srcPath = pathInData(data)
+  override def replaceFileWithFetchItem(pathInData: Path, url: URL): Try[DansV0Bag] = Try {
+    val srcPath = data / pathInData.toString
 
     if (srcPath.notExists)
       throw new NoSuchFileException(srcPath.toString())
@@ -327,15 +313,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def replaceFileWithFetchItem(pathInData: Path, url: URL): Try[DansV0Bag] = {
-    replaceFileWithFetchItem(_ / pathInData.toString, url)
-  }
-
-  /**
-   * @inheritdoc
-   */
-  override def replaceFetchItemWithFile(pathInData: RelativePath): Try[DansV0Bag] = Try {
-    val destinationPath = pathInData(data)
+  override def replaceFetchItemWithFile(pathInData: Path): Try[DansV0Bag] = Try {
+    val destinationPath = data / pathInData.toString
 
     fetchFiles.find(_.file == destinationPath)
       .map(replaceFetchItemWithFile)
@@ -343,13 +322,6 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
         throw new IllegalArgumentException(s"path $destinationPath does not occur in the list of fetch files")
       }
   }.flatten
-
-  /**
-   * @inheritdoc
-   */
-  override def replaceFetchItemWithFile(pathInData: Path): Try[DansV0Bag] = {
-    replaceFetchItemWithFile(_ / pathInData.toString)
-  }
 
   /**
    * @inheritdoc
@@ -484,9 +456,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def addPayloadFile(inputStream: InputStream)
-                             (pathInData: RelativePath): Try[DansV0Bag] = Try {
-    val file = pathInData(data)
+  override def addPayloadFile(inputStream: InputStream, pathInData: Path): Try[DansV0Bag] = Try {
+    val file: File = data / pathInData.toString
 
     if (file.exists)
       throw new FileAlreadyExistsException(file.toString)
@@ -505,15 +476,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def addPayloadFile(inputStream: InputStream, pathInData: Path): Try[DansV0Bag] = {
-    addPayloadFile(inputStream)(_ / pathInData.toString)
-  }
-
-  /**
-   * @inheritdoc
-   */
-  override def addPayloadFile(src: File)(pathInData: RelativePath): Try[DansV0Bag] = Try {
-    addFile(src, pathInData)(_.addPayloadFile)
+  override def addPayloadFile(src: File, pathInData: Path): Try[DansV0Bag] = Try {
+    addFile(src, pathInData)(bag => is => path => bag.addPayloadFile(is, path))
 
     this
   }
@@ -521,15 +485,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def addPayloadFile(src: File, pathInData: Path): Try[DansV0Bag] = {
-    addPayloadFile(src)(_ / pathInData.toString)
-  }
-
-  /**
-   * @inheritdoc
-   */
-  override def removePayloadFile(pathInData: RelativePath): Try[DansV0Bag] = Try {
-    val file = pathInData(data)
+  override def removePayloadFile(pathInData: Path): Try[DansV0Bag] = Try {
+    val file = data / pathInData.toString
 
     if (file.notExists)
       throw new NoSuchFileException(file.toString)
@@ -547,20 +504,13 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def removePayloadFile(pathInData: Path): Try[DansV0Bag] = {
-    removePayloadFile(_ / pathInData.toString)
-  }
-
-  /**
-   * @inheritdoc
-   */
   override def tagManifests: Map[ChecksumAlgorithm, Map[File, String]] = manifests(locBag.getTagManifests)
 
   /**
    * @inheritdoc
    */
-  override def addTagFile(inputStream: InputStream)(pathInBag: RelativePath): Try[DansV0Bag] = Try {
-    val file = pathInBag(baseDir)
+  override def addTagFile(inputStream: InputStream, pathInBag: Path): Try[DansV0Bag] = Try {
+    val file = baseDir / pathInBag.toString
 
     if (file.exists)
       throw new FileAlreadyExistsException(file.toString)
@@ -601,15 +551,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def addTagFile(inputStream: InputStream, pathInBag: Path): Try[DansV0Bag] = {
-    addTagFile(inputStream)(_ / pathInBag.toString)
-  }
-
-  /**
-   * @inheritdoc
-   */
-  override def addTagFile(src: File)(pathInBag: RelativePath): Try[DansV0Bag] = Try {
-    addFile(src, pathInBag)(_.addTagFile)
+  override def addTagFile(src: File, pathInBag: Path): Try[DansV0Bag] = Try {
+    addFile(src, pathInBag)(bag => is => path => bag.addTagFile(is, path))
 
     this
   }
@@ -617,15 +560,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
   /**
    * @inheritdoc
    */
-  override def addTagFile(src: File, pathInBag: Path): Try[DansV0Bag] = {
-    addTagFile(src: File)(_ / pathInBag.toString)
-  }
-
-  /**
-   * @inheritdoc
-   */
-  override def removeTagFile(pathInBag: RelativePath): Try[DansV0Bag] = Try {
-    val file = pathInBag(baseDir)
+  override def removeTagFile(pathInBag: Path): Try[DansV0Bag] = Try {
+    val file = baseDir / pathInBag.toString
 
     if (file.notExists)
       throw new NoSuchFileException(file.toString)
@@ -648,13 +584,6 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
     removeFileFromManifests(file, locBag.getTagManifests)
 
     this
-  }
-
-  /**
-   * @inheritdoc
-   */
-  override def removeTagFile(pathInBag: Path): Try[DansV0Bag] = {
-    removeTagFile(_ / pathInBag.toString)
   }
 
   /**
@@ -824,16 +753,16 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
       manifest.getFileToChecksumMap.put(dest, dest.checksum(algorithm).toLowerCase)
   }
 
-  private def addFile(src: File, pathInBag: RelativePath)
-                     (addFileAsStream: DansV0Bag => InputStream => RelativePath => Try[DansV0Bag]): Unit = {
+  private def addFile(src: File, pathInBag: Path)
+                     (addFileAsStream: DansV0Bag => InputStream => Path => Try[DansV0Bag]): Unit = {
 
-    def calculatePathInBagToFile(file: File)(pathInBagToFile: RelativePath): RelativePath = {
-      pathInBagToFile(_) / file.name
+    def calculatePathInBagToFile(file: File)(pathInBagToFile: Path): Path = {
+      pathInBagToFile resolve file.name
     }
 
     @tailrec
-    def recursion(bag: DansV0Bag, currentFile: File, pathInBagToFile: RelativePath)
-                 (implicit backlog: mutable.Queue[(File, RelativePath)]): DansV0Bag = {
+    def recursion(bag: DansV0Bag, currentFile: File, pathInBagToFile: Path)
+                 (implicit backlog: mutable.Queue[(File, Path)]): DansV0Bag = {
       if (currentFile.isDirectory) {
         val subFiles = currentFile.list
           .map(file => file -> calculatePathInBagToFile(file)(pathInBagToFile))
