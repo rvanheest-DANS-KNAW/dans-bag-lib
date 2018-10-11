@@ -155,12 +155,12 @@ class FetchItemSpec extends TestSupportFixture
   it should "fail when the file cannot be downloaded from the provided url" in {
     val bag = simpleBagV0()
 
-    inside(bag.addFetchItem(new URL("http://x"), Paths.get("to-be-fetched/failing-url.txt"))) {
+    inside(bag.addFetchItem(new URL("http://not.existing.dans.knaw.nl"), Paths.get("to-be-fetched/failing-url.txt"))) {
       // it's either one of these exceptions that is thrown
       case Failure(e: SocketTimeoutException) =>
         e should have message "connect timed out"
       case Failure(e: UnknownHostException) =>
-        e should have message "x"
+        e should have message "not.existing.dans.knaw.nl"
     }
   }
 
@@ -299,7 +299,7 @@ class FetchItemSpec extends TestSupportFixture
 
   it should "fail when the fetch item is not a part of the bag" in {
     val bag = fetchBagV0()
-    val url = new URL("http://not.existing/fetch/file")
+    val url = new URL("http://not.existing.dans.knaw.nl/fetch/file")
 
     bag.fetchFiles.map(_.url) should not contain url
 
@@ -358,7 +358,7 @@ class FetchItemSpec extends TestSupportFixture
 
   it should "not fail when the fetch item is not a part of the bag" in {
     val bag = fetchBagV0()
-    val fetchItem = FetchItem(new URL("http://not.existing/fetch/file"), 12L, bag.data / "not-existing-fetch-file")
+    val fetchItem = FetchItem(new URL("http://not.existing.dans.knaw.nl/fetch/file"), 12L, bag.data / "not-existing-fetch-file")
 
     bag.fetchFiles should not contain fetchItem
     forEvery(bag.payloadManifests) {
@@ -380,7 +380,7 @@ class FetchItemSpec extends TestSupportFixture
 
     (bag.data / "y") should exist
 
-    inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://y"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://not.existing.dans.knaw.nl/y"))) {
       case Success(resultBag) =>
         (resultBag.data / "y") shouldNot exist
     }
@@ -391,7 +391,7 @@ class FetchItemSpec extends TestSupportFixture
 
     (bag.data / "more" / "files" / "abc") should exist
 
-    inside(bag.replaceFileWithFetchItem(Paths.get("more/files/abc"), new URL("http://abc"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("more/files/abc"), new URL("http://not.existing.dans.knaw.nl/abc"))) {
       case Success(resultBag) =>
         (resultBag.data / "more" / "files" / "abc") shouldNot exist
         (resultBag.data / "more" / "files") shouldNot exist
@@ -408,7 +408,7 @@ class FetchItemSpec extends TestSupportFixture
         manifest should contain key (bag.data / "y")
     }
 
-    inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://y"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://not.existing.dans.knaw.nl/y"))) {
       case Success(resultBag) =>
         forEvery(resultBag.payloadManifests) {
           case (_, manifest) =>
@@ -420,12 +420,13 @@ class FetchItemSpec extends TestSupportFixture
   it should "add the file to the list of fetch files" in {
     val bag = fetchBagV0()
     val yBytes = (bag.data / "y").size
+    val url = new URL("http://not.existing.dans.knaw.nl/y")
 
     bag.fetchFiles.map(_.file) shouldNot contain(bag.data / "y")
 
-    inside(bag.replaceFileWithFetchItem(Paths.get("y"), new URL("http://y"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("y"), url)) {
       case Success(resultBag) =>
-        resultBag.fetchFiles should contain(FetchItem(new URL("http://y"), yBytes, resultBag.data / "y"))
+        resultBag.fetchFiles should contain(FetchItem(url, yBytes, resultBag.data / "y"))
     }
   }
 
@@ -434,7 +435,7 @@ class FetchItemSpec extends TestSupportFixture
 
     (bag.data / "no-such-file.txt") shouldNot exist
 
-    inside(bag.replaceFileWithFetchItem(Paths.get("no-such-file.txt"), new URL("http://xxx"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("no-such-file.txt"), new URL("http://not.existing.dans.knaw.nl/xxx"))) {
       case Failure(e: NoSuchFileException) =>
         e should have message (bag.data / "no-such-file.txt").toString()
     }
@@ -443,7 +444,7 @@ class FetchItemSpec extends TestSupportFixture
   it should "fail when the file is not inside the bag/data directory" in {
     val bag = fetchBagV0()
 
-    inside(bag.replaceFileWithFetchItem(Paths.get("../fetch.txt"), new URL("http://xxx"))) {
+    inside(bag.replaceFileWithFetchItem(Paths.get("../fetch.txt"), new URL("http://not.existing.dans.knaw.nl/xxx"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"a fetch file can only point to a location inside the bag/data directory; ${ bag / "fetch.txt" } is outside the data directory"
     }
@@ -600,7 +601,7 @@ class FetchItemSpec extends TestSupportFixture
 
     val bag = fetchBagV0()
     val yNew = bag.data / "y-new-file"
-    val fetchItem = FetchItem(new URL("http://y-new-url"), 12L, yNew)
+    val fetchItem = FetchItem(new URL("http://not.existing.dans.knaw.nl/y-new-url"), 12L, yNew)
     bag.locBag.getItemsToFetch.add(fetchItem)
 
     inside(bag.replaceFetchItemWithFile(fetchItem)) {
@@ -608,7 +609,7 @@ class FetchItemSpec extends TestSupportFixture
       case Failure(e: SocketTimeoutException) =>
         e should have message "connect timed out"
       case Failure(e: UnknownHostException) =>
-        e should have message "y-new-url"
+        e should have message "not.existing.dans.knaw.nl"
     }
   }
 
