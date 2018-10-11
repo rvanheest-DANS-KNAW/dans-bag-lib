@@ -677,11 +677,11 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     }
   }
 
-  it should "fail when the file to remove is the bag directory itself" in pendingUntilFixed {
+  it should "fail when the file to remove is the bag directory itself" in {
     val bag = simpleBagV0()
 
     bag.baseDir should exist
-    bag.isChildOf(bag) shouldBe false // TODO why does this actually return true??? - https://github.com/pathikrit/better-files/issues/247
+    bag.isChildOf(bag) shouldBe false
 
     inside(bag.removeTagFile(Paths.get(""))) {
       case Failure(e: IllegalArgumentException) =>
