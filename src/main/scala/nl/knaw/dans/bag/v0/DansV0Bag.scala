@@ -21,7 +21,7 @@ import java.nio.charset.Charset
 import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException, Path, Files => jFiles }
 import java.util.{ UUID, Set => jSet }
 
-import better.files.{ CloseableOps, Disposable, File, Files, ManagedResource }
+import better.files.{ CloseableOps, Disposable, Dispose, File }
 import gov.loc.repository.bagit.creator.BagCreator
 import gov.loc.repository.bagit.domain.{ Version, Bag => LocBag, FetchItem => LocFetchItem, Manifest => LocManifest, Metadata => LocMetadata }
 import gov.loc.repository.bagit.reader.BagReader
@@ -641,7 +641,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
    * @inheritdoc
    */
   override def isComplete: Either[String, Unit] = {
-    Try { new ManagedResource(new BagVerifier()).apply(_.isComplete(this.locBag, false)) }
+    Try { new Dispose(new BagVerifier()).apply(_.isComplete(this.locBag, false)) }
       .toEither.left.map(_.getMessage)
   }
 
@@ -649,7 +649,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
    * @inheritdoc
    */
   override def isValid: Either[String, Unit] = {
-    Try { new ManagedResource(new BagVerifier()).apply(_.isValid(this.locBag, false)) }
+    Try { new Dispose(new BagVerifier()).apply(_.isValid(this.locBag, false)) }
       .toEither.left.map(_.getMessage)
   }
 
@@ -658,13 +658,13 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
       throw new IllegalArgumentException("url can only have protocol 'http' or 'https'")
   }
 
-  protected def openConnection(url: URL): ManagedResource[URLConnection] = {
+  protected def openConnection(url: URL): Dispose[URLConnection] = {
     url.openConnection() match {
       case conn: HttpURLConnection =>
         conn.setConnectTimeout(1000)
         conn.setReadTimeout(1000)
 
-        new ManagedResource(conn)
+        new Dispose(conn)
       case _ =>
         throw new IllegalArgumentException("only 'http' and 'https' urls accepted")
     }
@@ -691,7 +691,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
 
   private def addAlgorithm(checksumAlgorithm: ChecksumAlgorithm, updateManifest: Boolean = false,
                            includeFetchFiles: Boolean = false)
-                          (getManifests: jSet[LocManifest], payload: Files,
+                          (getManifests: jSet[LocManifest], payload: Iterator[File],
                            fetchItems: => Seq[FetchItem] = Seq.empty): Unit = {
     val (fileToChecksumMap, isNew) = getManifests.asScala
       .collectFirst {
