@@ -16,6 +16,7 @@
 package nl.knaw.dans.bag.v0
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 import java.util.UUID
 
 import gov.loc.repository.bagit.conformance.{ BagLinter, BagitWarning }
@@ -91,7 +92,7 @@ class SaveSpec extends TestSupportFixture
     // changes + save
     val newFile = testDir / "xxx.txt" createIfNotExists (createParents = true) writeText lipsum(5)
     val uuid = s"urn:uuid:${ UUID.randomUUID() }"
-    bag.addPayloadFile(newFile)(_ / "abc.txt")
+    bag.addPayloadFile(newFile, Paths.get("abc.txt"))
       .map(_.addBagInfo("Is-Version-Of", uuid))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
@@ -159,8 +160,8 @@ class SaveSpec extends TestSupportFixture
     fetchTxt shouldNot exist
 
     // changes + save
-    bag.addFetchItem(lipsum1URL, _ / "some-file1.txt")
-      .flatMap(_.addFetchItem(lipsum2URL, _ / "some-file2.txt"))
+    bag.addFetchItem(lipsum1URL, Paths.get("some-file1.txt"))
+      .flatMap(_.addFetchItem(lipsum2URL, Paths.get("some-file2.txt")))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -211,7 +212,7 @@ class SaveSpec extends TestSupportFixture
     )
 
     // changes + save
-    bag.addFetchItem(newFetchItem.url, _ / "some-file1.txt")
+    bag.addFetchItem(newFetchItem.url, Paths.get("some-file1.txt"))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -255,7 +256,7 @@ class SaveSpec extends TestSupportFixture
     (bag / "manifest-sha256.txt").contentAsString should not include s"$lipsum5Sha256  ${ bag.baseDir.relativize(newFetchItem.file) }"
 
     // changes + save
-    bag.addFetchItem(newFetchItem.url, _ / "some-file.txt")
+    bag.addFetchItem(newFetchItem.url, Paths.get("some-file.txt"))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -289,7 +290,7 @@ class SaveSpec extends TestSupportFixture
     (bag / "tagmanifest-sha256.txt").contentAsString should not include "fetch.txt"
 
     // changes + save
-    bag.addFetchItem(newFetchItem.url, _ / "some-file.txt")
+    bag.addFetchItem(newFetchItem.url, Paths.get("some-file.txt"))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -373,8 +374,8 @@ class SaveSpec extends TestSupportFixture
 
     // changes + save
     val newFile = testDir / "xxx.txt" createIfNotExists (createParents = true) writeText lipsum(5)
-    bag.addPayloadFile(newFile)(_ / "abc.txt")
-      .flatMap(_.removePayloadFile(_ / "y"))
+    bag.addPayloadFile(newFile, Paths.get("abc.txt"))
+      .flatMap(_.removePayloadFile(Paths.get("y")))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -413,7 +414,7 @@ class SaveSpec extends TestSupportFixture
     // changes + save
     val newFile = testDir / "xxx.txt" createIfNotExists (createParents = true) writeText lipsum(5)
     bag.addPayloadManifestAlgorithm(ChecksumAlgorithm.SHA256)
-      .flatMap(_.addPayloadFile(newFile)(_ / "abc.txt"))
+      .flatMap(_.addPayloadFile(newFile, Paths.get("abc.txt")))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -540,7 +541,7 @@ class SaveSpec extends TestSupportFixture
     )
 
     // changes + save
-    bag.addPayloadFile(newFileSrc)(_ => newFile)
+    bag.addPayloadFile(newFileSrc, bag.data.relativize(newFile))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results
@@ -576,7 +577,7 @@ class SaveSpec extends TestSupportFixture
 
     // changes + save
     bag.addTagManifestAlgorithm(ChecksumAlgorithm.MD5)
-      .flatMap(_.addTagFile(newFileSrc)(_ => newFile))
+      .flatMap(_.addTagFile(newFileSrc, bag.baseDir.relativize(newFile)))
       .flatMap(_.save()) shouldBe a[Success[_]]
 
     // expected results

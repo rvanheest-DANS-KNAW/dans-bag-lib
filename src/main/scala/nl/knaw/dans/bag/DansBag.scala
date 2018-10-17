@@ -213,28 +213,6 @@ trait DansBag {
    *
    * @example
    * {{{
-   *   bag.addFetchItem(url, _ / "path" / "to" / "some" / "file.txt")
-   * }}}
-   * @param url        the url where the file is to be retrieved from
-   * @param pathInData the path relative to the `bag/data` directory where the new file is virtually being placed
-   * @return this bag, with the new FetchItem
-   */
-  def addFetchItem(url: URL, pathInData: RelativePath): Try[DansBag]
-
-  /**
-   * Adds the triple (url, length, path) to the `fetch.txt`.
-   * If the path already exists in the fetch, or in the payload, an Exception will occur.
-   * The PayloadManifests are updated with the checksum of the downloaded file. The length will be calculated as well.
-   *
-   * Due to calculating the checksums for all files, as well as downloading all fetch files, this
-   * method may take some time to complete and return. It is therefore strongly advised to wrap
-   * a call to this method in a `Promise`/`Future`, `Observable` or any other desired data structure
-   * that deals with latency in a proper way.
-   *
-   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once [[DansBag#save]] is called.
-   *
-   * @example
-   * {{{
    *   bag.addFetchItem(url, Paths.get("path/to/some/file.txt"))
    * }}}
    * @param url        the url where the file is to be retrieved from
@@ -242,20 +220,6 @@ trait DansBag {
    * @return this bag, with the new FetchItem
    */
   def addFetchItem(url: URL, pathInData: Path): Try[DansBag]
-
-  /**
-   * Removes the fetchitem with this pathInData from the `fetch.txt` and the PayloadManifests.
-   *
-   * Please note that this will only be synced with `fetch.txt` and `manifest-<alg>.txt` once [[DansBag#save]] is called.
-   *
-   * @example
-   * {{{
-   *   bag.removeFetchItem(_ / "path" / "to" / "some" / "file.txt")
-   * }}}
-   * @param pathInData the path relative to the `bag/data` directory of the fetchitem to be removed
-   * @return this bag, without the fetchitem
-   */
-  def removeFetchItem(pathInData: RelativePath): Try[DansBag]
 
   /**
    * Removes the fetchitem with this pathInData from the `fetch.txt` and the PayloadManifests.
@@ -304,27 +268,6 @@ trait DansBag {
    *
    * @example
    * {{{
-   *   bag.replaceFileWithFetchItem(_ / "path" / "to" / "some" / "file.txt", url)
-   * }}}
-   * @param pathInData the path in `bag/data` to the file that is included in the fetch file
-   * @param url        the `URL` through which the file will be resolved in the future
-   * @return this bag, with the added reference in the fetch file
-   */
-  def replaceFileWithFetchItem(pathInData: RelativePath, url: URL): Try[DansBag]
-
-  /**
-   * Migrates a file from the payload directory to the fetch file, where it is referenced by the
-   * given `URL`.
-   * If the resolved path of the original file does not exist in the bag, or if the resolved path is
-   * outside of the `bag/data` directory, a `Failure` is returned.
-   * The `URL` is not checked for its resolvability, nor is this method responsible for uploading
-   * the referenced file to the specific `URL`.
-   *
-   * Please note that, while the file is removed from the bag immediately, the changes to the
-   * fetch file will only be applied to the bag on the file system once [[DansBag#save]] is called.
-   *
-   * @example
-   * {{{
    *   bag.replaceFileWithFetchItem(Paths.get("path/to/some/file.txt"), url)
    * }}}
    * @param pathInData the path in `bag/data` to the file that is included in the fetch file
@@ -332,32 +275,6 @@ trait DansBag {
    * @return this bag, with the added reference in the fetch file
    */
   def replaceFileWithFetchItem(pathInData: Path, url: URL): Try[DansBag]
-
-  /**
-   * Downloads a file from the list of fetch files (indicated by the relative path to `bag/data`)
-   * through the corresponding `URL` and stores it at its original place. The original reference in
-   * `fetch.txt` is removed.
-   *
-   * If the checksum(s) of the downloaded file do(es) not match the checksum(s) listed in the
-   * payload manifest(s), a `Failure` will be returned. In this case, the file is not added to the
-   * payload directory.
-   *
-   * Due to downloading the file, this method may take some time to complete and return. It is
-   * therefore strongly advised to wrap a call to this method in a `Promise`/`Future`, `Observable`
-   * or any other desired data structure that deals with latency in a proper way.
-   *
-   * Please note that this change is applied immediately and, since no changes are made to the rest
-   * of the bag, there is no need to call [[DansBag#save]] for this to have full effect.
-   *
-   * @example
-   * {{{
-   *   bag.replaceFetchItemWithFile(_ / "path" / "to" / "some" / "file.txt")
-   * }}}
-   * @param pathInData a relative path in `bag/data` that is listed in the fetch file and where the
-   *                   file is stored on file system after being downloaded
-   * @return this bag, after having downloaded the file
-   */
-  def replaceFetchItemWithFile(pathInData: RelativePath): Try[DansBag]
 
   /**
    * Downloads a file from the list of fetch files (indicated by the relative path to `bag/data`)
@@ -527,29 +444,6 @@ trait DansBag {
    *
    * @example
    * {{{
-   *   bag.addPayloadFile(inputStream)(_ / "path" / "to" / "some" / "file.txt")
-   * }}}
-   * @param inputStream the source of the new file to be added to the bag
-   * @param pathInData  the path relative to the `bag/data` directory where the new file is being placed
-   * @return this bag, with the added checksums of the new payload file
-   */
-  def addPayloadFile(inputStream: InputStream)(pathInData: RelativePath): Try[DansBag]
-
-  /**
-   * Add a payload file from an `java.io.InputStream` to the bag at the position indicated by the
-   * path relative to the `bag/data` directory. If the resolved destination of this new file already
-   * exists within the bag, or if the resolved destination is outside of the `bag/data` directory,
-   * this method will return a `scala.util.Failure`. This method also adds the checksum of the new
-   * file to all payload manifests.
-   *
-   * Please note that fetch files are also considered part of the payload files. Therefore it is not
-   * allowed to add a payload file using this method that is already declared in `fetch.txt`.
-   *
-   * Please note that, while the new file is added to the bag immediately, the changes to the
-   * payload manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
-   *
-   * @example
-   * {{{
    *   bag.addPayloadFile(inputStream, Paths.get("path/to/some/file.txt"))
    * }}}
    * @param inputStream the source of the new file to be added to the bag
@@ -557,34 +451,6 @@ trait DansBag {
    * @return this bag, with the added checksums of the new payload file
    */
   def addPayloadFile(inputStream: InputStream, pathInData: Path): Try[DansBag]
-
-  /**
-   * Add a payload file to the bag at the position indicated by the path relative to the `bag/data`
-   * directory. If the resolved destination of this new file already exists within the bag, or if
-   * the resolved destination is outside of the `bag/data` directory, this method will return a
-   * `scala.util.Failure`. This method also adds the checksum of the new file to all payload manifests.
-   *
-   * When `src` is a directory, each file will in that directory will be copied into the payload directory.
-   *
-   * Please note that fetch files are also considered part of the payload files. Therefore it is not
-   * allowed to add a payload file using this method that is already declared in `fetch.txt`.
-   *
-   * Please note that, while the new file is added to the bag immediately, the changes to the
-   * payload manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
-   *
-   * @example
-   * {{{
-   *   // add a single file
-   *   bag.addPayloadFile(srcFile)(_ / "path" / "to" / "some" / "file.txt")
-   *
-   *   // add a directory of files
-   *   bag.addPayloadFile(srcDir)(_ / "path" / "to" / "some" / "directory")
-   * }}}
-   * @param src        the source of the new file to be added to the bag
-   * @param pathInData the path relative to the `bag/data` directory where the new file is being placed
-   * @return this bag, with the added checksums of the new payload file
-   */
-  def addPayloadFile(src: File)(pathInData: RelativePath): Try[DansBag]
 
   /**
    * Add a payload file to the bag at the position indicated by the path relative to the `bag/data`
@@ -627,26 +493,6 @@ trait DansBag {
    *
    * @example
    * {{{
-   *   bag.removePayloadFile(_ / "path" / "to" / "some" / "file.txt")
-   * }}}
-   * @param pathInData the path to the file within `bag/data` that is being removed
-   * @return this bag, without the payload manifest entries for the removed file
-   */
-  def removePayloadFile(pathInData: RelativePath): Try[DansBag]
-
-  /**
-   * Remove the payload file (relative to the `bag/data` directory) from the bag. This also removes
-   * the related entries from all payload manifests. If the removal of this file causes a directory
-   * to be empty, it is removed from the bag as well. However, an empty `bag/data` directory is
-   * preserved.
-   * If the given file does not exist or is not inside the `bag/data` directory or it is a directory,
-   * a `scala.util.Failure` is returned.
-   *
-   * Please note that, while the file is removed from the bag immediately, the changes to the
-   * payload manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
-   *
-   * @example
-   * {{{
    *   bag.removePayloadFile(Paths.get("path/to/some/file.txt"))
    * }}}
    * @param pathInData the path to the file within `bag/data` that is being removed
@@ -660,27 +506,6 @@ trait DansBag {
    * @return the mapping of tag file to its checksum, for each algorithm
    */
   def tagManifests: Map[ChecksumAlgorithm, Map[File, String]]
-
-  /**
-   * Add a tag file from an `java.io.InputStream` to the bag at the position indicated by the
-   * path relative to the bag's base directory. If the resolved destination of this new file already
-   * exists within the bag, or if the resolved destination is outside of the base directory, inside
-   * the `bag/data` directory or if it is equal to one of the reserved files (`bagit.txt`, `bag-info.txt`,
-   * `fetch.txt`, `manifest-*.txt` or `tagmanifest-*.txt`) this method will return a
-   * `scala.util.Failure`. This method also adds the checksum of the new file to all tag manifests.
-   *
-   * Please note that, while the new file is added to the bag immediately, the changes to the
-   * tag manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
-   *
-   * @example
-   * {{{
-   *   bag.addTagFile(inputStream)(_ / "path" / "to" / "some" / "file.txt")
-   * }}}
-   * @param inputStream the source of the new file to be added to the bag
-   * @param pathInBag   the path relative to the bag's base directory where the new file is being placed
-   * @return this bag, with the added checksums of the new tag file
-   */
-  def addTagFile(inputStream: InputStream)(pathInBag: RelativePath): Try[DansBag]
 
   /**
    * Add a tag file from an `java.io.InputStream` to the bag at the position indicated by the
@@ -719,33 +544,6 @@ trait DansBag {
    * @example
    * {{{
    *   // add a single file
-   *   bag.addTagFile(srcFile)(_ / "path" / "to" / "some" / "file.txt")
-   *
-   *   // add a directory of files
-   *   bag.addTagFile(srcDir)(_ / "path" / "to" / "some" / "directory")
-   * }}}
-   * @param src       the source of the new file to be added to the bag
-   * @param pathInBag the path relative to the bag's base directory where the new file is being placed
-   * @return this bag, with the added checksums of the new tag file
-   */
-  def addTagFile(src: File)(pathInBag: RelativePath): Try[DansBag]
-
-  /**
-   * Add a tag file to the bag at the position indicated by the path relative to the bag's base
-   * directory. If the resolved destination of this new file already exists within the bag, or if
-   * the resolved destination is outside of the base directory, inside the `bag/data` directory or
-   * if it is equal to one of the reserved files (`bagit.txt`, `bag-info.txt`, `fetch.txt`,
-   * `manifest-*.txt` or `tagmanifest-*.txt`) this method will return a  `scala.util.Failure`.
-   * This method also adds the checksum of the new file to all tag manifests.
-   *
-   * When `src` is a directory, each file will in that directory will be copied into the payload directory.
-   *
-   * Please note that, while the new file is added to the bag immediately, the changes to the
-   * tag manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
-   *
-   * @example
-   * {{{
-   *   // add a single file
    *   bag.addTagFile(srcFile, Paths.get("path/to/some/file.txt"))
    *
    *   // add a directory of files
@@ -756,26 +554,6 @@ trait DansBag {
    * @return this bag, with the added checksums of the new tag file
    */
   def addTagFile(src: File, pathInBag: Path): Try[DansBag]
-
-  /**
-   * Remove the tag file (relative to the bag's base directory) from the bag. This also removes
-   * the related entries from all tag manifests. If the removal of this file causes a directory
-   * to be empty, it is removed from the bag as well.
-   * If the given file does not exist, or is inside the `bag/data` directory, outside/equal to the
-   * base directory, or is a directory, or is one of the reserved files (`bagit.txt`, `bag-info.txt`,
-   * `fetch.txt`, `manifest-*.txt` or `tagmanifest-*.txt`) a `scala.util.Failure` is returned.
-   *
-   * Please note that, while the file is removed from the bag immediately, the changes to the
-   * tag manifests will only be applied to the bag on the file system once [[DansBag#save]] is called.
-   *
-   * @example
-   * {{{
-   *   bag.removeTagFile(_ / "path" / "to" / "some" / "file.txt")
-   * }}}
-   * @param pathInBag the path to the file within the bag's base directory that is being removed
-   * @return this bag, without the tag manifest entries for the removed file
-   */
-  def removeTagFile(pathInBag: RelativePath): Try[DansBag]
 
   /**
    * Remove the tag file (relative to the bag's base directory) from the bag. This also removes
@@ -829,16 +607,6 @@ trait DansBag {
   // TODO test
   /**
    *
-   * @param file
-   * @return
-   */
-  def getFileMetadata(file: RelativePath): Option[PayloadFileMetadata]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
    * @param path
    * @return
    */
@@ -852,28 +620,7 @@ trait DansBag {
    * @param dir
    * @return
    */
-  def getFileMetadataInDirectory(dir: RelativePath): Iterable[PayloadFileMetadata]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param dir
-   * @return
-   */
   def getFileMetadataInDirectory(dir: Path): Iterable[PayloadFileMetadata]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param src
-   * @param dest
-   * @return
-   */
-  def movePayloadFile(src: RelativePath, dest: RelativePath): DansBag
 
   // TODO document
   // TODO implement
@@ -895,29 +642,7 @@ trait DansBag {
    * @param dest
    * @return
    */
-  def moveFetchFile(src: RelativePath, dest: RelativePath): DansBag
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param src
-   * @param dest
-   * @return
-   */
   def moveFetchFile(src: Path, dest: Path): DansBag
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param src
-   * @param dest
-   * @return
-   */
-  def moveFetchFile(src: URL, dest: RelativePath): DansBag
 
   // TODO document
   // TODO implement
@@ -938,27 +663,7 @@ trait DansBag {
    * @param path
    * @return
    */
-  def updateMimetype(path: RelativePath): Try[DansBag]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param path
-   * @return
-   */
   def updateMimetype(path: Path): Try[DansBag]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param path
-   * @return
-   */
-  def setAccessibleToRights(path: RelativePath): Try[DansBag]
 
   // TODO document
   // TODO implement
@@ -978,16 +683,6 @@ trait DansBag {
    * @param path
    * @return
    */
-  def removeAccessibleToRights(path: RelativePath): Try[DansBag]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param path
-   * @return
-   */
   def removeAccessibleToRights(path: Path): Try[DansBag]
 
   // TODO document
@@ -998,27 +693,7 @@ trait DansBag {
    * @param path
    * @return
    */
-  def setVisibleToRights(path: RelativePath): Try[DansBag]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param path
-   * @return
-   */
   def setVisibleToRights(path: Path): Try[DansBag]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param path
-   * @return
-   */
-  def removeVisibleToRights(path: RelativePath): Try[DansBag]
 
   // TODO document
   // TODO implement
@@ -1039,29 +714,7 @@ trait DansBag {
    * @param elem
    * @return
    */
-  def addFileMetadata(path: RelativePath, elem: MetadataElement): Try[DansBag]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param path
-   * @param elem
-   * @return
-   */
   def addFileMetadata(path: Path, elem: MetadataElement): Try[DansBag]
-
-  // TODO document
-  // TODO implement
-  // TODO test
-  /**
-   *
-   * @param path
-   * @param elem
-   * @return
-   */
-  def removeFileMetadata(path: RelativePath, elem: MetadataElement): Try[DansBag]
 
   // TODO document
   // TODO implement

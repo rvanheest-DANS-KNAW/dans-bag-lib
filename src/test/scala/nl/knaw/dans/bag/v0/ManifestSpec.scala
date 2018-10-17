@@ -16,11 +16,11 @@
 package nl.knaw.dans.bag.v0
 
 import java.io.IOException
-import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException, Paths }
+import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException, Path, Paths }
 
 import better.files.File
+import nl.knaw.dans.bag.ChecksumAlgorithm
 import nl.knaw.dans.bag.fixtures.{ BagMatchers, Lipsum, TestBags, TestSupportFixture }
-import nl.knaw.dans.bag.{ ChecksumAlgorithm, RelativePath }
 
 import scala.language.existentials
 import scala.util.{ Failure, Success, Try }
@@ -45,12 +45,12 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     })
   }
 
-  def addPayloadFile(addPayloadFile: DansV0Bag => File => RelativePath => Try[DansV0Bag]): Unit = {
+  def addPayloadFile(addPayloadFile: DansV0Bag => File => Path => Try[DansV0Bag]): Unit = {
     it should "copy the new file into the bag" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "path" / "to" / "file-copy.txt"
-      val dest = relativeDest(bag.data)
+      val relativeDest = Paths.get("path/to/file-copy.txt")
+      val dest = bag.data / relativeDest.toString
 
       dest shouldNot exist
 
@@ -64,8 +64,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "add the checksum for all algorithms in the bag to the payload manifest" in {
       val bag = multipleManifestsBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "path" / "to" / "file-copy.txt"
-      val dest = relativeDest(bag.data)
+      val relativeDest = Paths.get("path/to/file-copy.txt")
+      val dest = bag.data / relativeDest.toString
 
       bag.payloadManifestAlgorithms should contain only(
         ChecksumAlgorithm.SHA1,
@@ -90,8 +90,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination is outside the bag/data directory" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / ".." / ".." / "path" / "to" / "file-copy.txt"
-      val dest = relativeDest(bag.data)
+      val relativeDest = Paths.get("../../path/to/file-copy.txt")
+      val dest = bag.data / relativeDest.toString
 
       dest shouldNot exist
 
@@ -106,8 +106,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination already exists" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / ".." / ".." / "path" / "to" / "file-copy.txt"
-      val dest = relativeDest(bag.data) createIfNotExists (createParents = true) writeText lipsum(1)
+      val relativeDest = Paths.get("../../path/to/file-copy.txt")
+      val dest = (bag.data / relativeDest.toString) createIfNotExists (createParents = true) writeText lipsum(1)
 
       dest should exist
 
@@ -123,8 +123,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination is already mentioned in the fetch file" in {
       val bag = fetchBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "x"
-      val dest = relativeDest(bag.data)
+      val relativeDest = Paths.get("x")
+      val dest = bag.data / relativeDest.toString
 
       dest shouldNot exist
       bag.fetchFiles.map(_.file) contains dest
@@ -146,8 +146,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     }
   }
 
-  "addPayloadFile with InputStream and RelativePath" should behave like addPayloadFile(
-    bag => file => relativeDest => file.inputStream()(bag.addPayloadFile(_)(relativeDest))
+  "addPayloadFile with InputStream" should behave like addPayloadFile(
+    bag => file => path => file.inputStream()(bag.addPayloadFile(_, path))
   )
 
   it should "fail when the given file is a directory" in {
@@ -157,30 +157,15 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     newDir / "file2.txt" createIfNotExists() writeText lipsum(2)
     newDir / "sub" / "file3.txt" createIfNotExists (createParents = true) writeText lipsum(3)
     newDir / "sub" / "subsub" / "file4.txt" createIfNotExists (createParents = true) writeText lipsum(4)
-    val relativeDest: RelativePath = _ / "path" / "to" / "newDir"
+    val relativeDest = Paths.get("path/to/newDir")
 
-    inside(newDir.inputStream()(bag.addPayloadFile(_)(relativeDest))) {
+    inside(newDir.inputStream()(bag.addPayloadFile(_, relativeDest))) {
       case Failure(e: IOException) =>
         e should have message "Is a directory"
     }
   }
 
-  "addPayloadFile with InputStream and java.nio.file.Path" should "forward to the overload with RelativePath" in {
-    val bag = simpleBagV0()
-    val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-    val relativeDest: RelativePath = _ / "path" / "to" / "file-copy.txt"
-    val dest = relativeDest(bag.data)
-
-    dest shouldNot exist
-
-    file.inputStream()(bag.addPayloadFile(_, Paths.get("path/to/file-copy.txt"))) shouldBe a[Success[_]]
-
-    dest should exist
-    dest.contentAsString shouldBe file.contentAsString
-    dest.sha1 shouldBe file.sha1
-  }
-
-  "addPayloadFile with File and RelativePath" should behave like addPayloadFile(_.addPayloadFile)
+  "addPayloadFile with File" should behave like addPayloadFile(bag => file => bag.addPayloadFile(file, _))
 
   it should "recursively add the files and folders in the directory to the bag" in {
     val bag = multipleManifestsBagV0()
@@ -190,10 +175,10 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val file3 = newDir / "sub1" / "file3.txt" createIfNotExists (createParents = true) writeText lipsum(3)
     val file4 = newDir / "sub1" / "sub1sub" / "file4.txt" createIfNotExists (createParents = true) writeText lipsum(4)
     val file5 = newDir / "sub2" / "file4.txt" createIfNotExists (createParents = true) writeText lipsum(5)
-    val relativeDest: RelativePath = _ / "path" / "to" / "newDir"
-    val dest = relativeDest(bag.data)
+    val relativeDest = Paths.get("path/to/newDir")
+    val dest = bag.data / relativeDest.toString
 
-    inside(bag.addPayloadFile(newDir)(relativeDest)) {
+    inside(bag.addPayloadFile(newDir, relativeDest)) {
       case Success(resultBag) =>
         val files = Set(file1, file2, file3, file4, file5)
           .map(file => dest / newDir.relativize(file).toString)
@@ -209,28 +194,13 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     }
   }
 
-  "addPayloadFile with File and java.nio.file.Path" should "forward to the overload with RelativePath" in {
-    val bag = simpleBagV0()
-    val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-    val relativeDest: RelativePath = _ / "path" / "to" / "file-copy.txt"
-    val dest = relativeDest(bag.data)
-
-    dest shouldNot exist
-
-    bag.addPayloadFile(file, Paths.get("path/to/file-copy.txt")) shouldBe a[Success[_]]
-
-    dest should exist
-    dest.contentAsString shouldBe file.contentAsString
-    dest.sha1 shouldBe file.sha1
-  }
-
-  "removePayloadFile with Relativepath" should "remove a payload file from the bag" in {
+  "removePayloadFile" should "remove a payload file from the bag" in {
     val bag = simpleBagV0()
     val file = bag.data / "sub" / "u"
 
     file should exist
 
-    bag.removePayloadFile(_ / "sub" / "u") shouldBe a[Success[_]]
+    bag.removePayloadFile(Paths.get("sub/u")) shouldBe a[Success[_]]
     file shouldNot exist
     file.parent should exist
   }
@@ -242,7 +212,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     bag.payloadManifests(ChecksumAlgorithm.SHA1) should contain key file
     bag.payloadManifests(ChecksumAlgorithm.SHA256) should contain key file
 
-    inside(bag.removePayloadFile(_ / "x")) {
+    inside(bag.removePayloadFile(Paths.get("x"))) {
       case Success(resultBag) =>
         resultBag.payloadManifests(ChecksumAlgorithm.SHA1) shouldNot contain key file
         resultBag.payloadManifests(ChecksumAlgorithm.SHA256) shouldNot contain key file
@@ -254,12 +224,12 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val file = testDir / "a.txt" createIfNotExists (createParents = true) writeText "content of file a"
     val destination = bag.data / "path" / "to" / "file" / "a.txt"
 
-    bag.addPayloadFile(file)(_ / "path" / "to" / "file" / "a.txt") shouldBe a[Success[_]]
+    bag.addPayloadFile(file, Paths.get("path/to/file/a.txt")) shouldBe a[Success[_]]
 
     destination should exist
     bag.payloadManifests(ChecksumAlgorithm.SHA1) should contain key destination
 
-    inside(bag.removePayloadFile(_ / "path" / "to" / "file" / "a.txt")) {
+    inside(bag.removePayloadFile(Paths.get("path/to/file/a.txt"))) {
       case Success(resultBag) =>
         resultBag.payloadManifests(ChecksumAlgorithm.SHA1) shouldNot contain key destination
 
@@ -275,12 +245,12 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
   it should "keep an empty bag/data directory if all files are removed from the bag" in {
     val bag = simpleBagV0()
 
-    val result = bag.removePayloadFile(_ / "x")
-      .flatMap(_.removePayloadFile(_ / "y"))
-      .flatMap(_.removePayloadFile(_ / "z"))
-      .flatMap(_.removePayloadFile(_ / "sub" / "u"))
-      .flatMap(_.removePayloadFile(_ / "sub" / "v"))
-      .flatMap(_.removePayloadFile(_ / "sub" / "w"))
+    val result = bag.removePayloadFile(Paths.get("x"))
+      .flatMap(_.removePayloadFile(Paths.get("y")))
+      .flatMap(_.removePayloadFile(Paths.get("z")))
+      .flatMap(_.removePayloadFile(Paths.get("sub/u")))
+      .flatMap(_.removePayloadFile(Paths.get("sub/v")))
+      .flatMap(_.removePayloadFile(Paths.get("sub/w")))
 
     inside(result) {
       case Success(resultBag) =>
@@ -309,12 +279,12 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
       })
     })
 
-    val result = bag.removePayloadFile(_ / "x")
-      .flatMap(_.removePayloadFile(_ / "y"))
-      .flatMap(_.removePayloadFile(_ / "z"))
-      .flatMap(_.removePayloadFile(_ / "sub" / "u"))
-      .flatMap(_.removePayloadFile(_ / "sub" / "v"))
-      .flatMap(_.removePayloadFile(_ / "sub" / "w"))
+    val result = bag.removePayloadFile(Paths.get("x"))
+      .flatMap(_.removePayloadFile(Paths.get("y")))
+      .flatMap(_.removePayloadFile(Paths.get("z")))
+      .flatMap(_.removePayloadFile(Paths.get("sub/u")))
+      .flatMap(_.removePayloadFile(Paths.get("sub/v")))
+      .flatMap(_.removePayloadFile(Paths.get("sub/w")))
 
     inside(result) {
       case Success(resultBag) =>
@@ -332,7 +302,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
     file shouldNot exist
 
-    inside(bag.removePayloadFile(_ / "doesnotexist.txt")) {
+    inside(bag.removePayloadFile(Paths.get("doesnotexist.txt"))) {
       case Failure(e: NoSuchFileException) =>
         e should have message file.toString
     }
@@ -345,7 +315,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     file should exist
     file.isChildOf(bag.data) shouldBe false
 
-    inside(bag.removePayloadFile(_ / ".." / "bagit.txt")) {
+    inside(bag.removePayloadFile(Paths.get("../bagit.txt"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"pathInData '$file' is supposed to point to a file that is a " +
           s"child of the bag/data directory"
@@ -360,7 +330,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     file.isDirectory shouldBe true
     val checksumsBeforeCall = bag.payloadManifests
 
-    inside(bag.removePayloadFile(_ / "sub")) {
+    inside(bag.removePayloadFile(Paths.get("sub"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove directory '$file'; you can only remove files"
 
@@ -370,17 +340,6 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
         // payload manifests didn't change
         bag.payloadManifests shouldBe checksumsBeforeCall
     }
-  }
-
-  "removePayloadFile with java.nio.file.Path" should "forward to the overload with RelativePath" in {
-    val bag = simpleBagV0()
-    val file = bag.data / "sub" / "u"
-
-    file should exist
-
-    bag.removePayloadFile(Paths.get("sub/u")) shouldBe a[Success[_]]
-    file shouldNot exist
-    file.parent should exist
   }
 
   "tagManifests" should "list all entries in the tagmanifest-<alg>.txt files" in {
@@ -401,12 +360,12 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     })
   }
 
-  def addTagFile(addTagFile: DansV0Bag => File => RelativePath => Try[DansV0Bag]): Unit = {
+  def addTagFile(addTagFile: DansV0Bag => File => Path => Try[DansV0Bag]): Unit = {
     it should "copy the new file into the bag" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "metadata" / "temp" / "file-copy.txt"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("metadata/temp/file-copy.txt")
+      val dest = bag.baseDir / relativeDest.toString
 
       dest shouldNot exist
 
@@ -420,8 +379,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "add the checksum for all algorithms in the bag to the tag manifests" in {
       val bag = multipleManifestsBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "metadata" / "temp" / "file-copy.txt"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("metadata/temp/file-copy.txt")
+      val dest = bag.baseDir / relativeDest.toString
 
       bag.tagManifestAlgorithms should contain only(
         ChecksumAlgorithm.SHA1,
@@ -446,8 +405,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination is inside the bag/data directory" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "data" / "path" / "to" / "file-copy.txt"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("data/path/to/file-copy.txt")
+      val dest = bag.baseDir / relativeDest.toString
 
       dest shouldNot exist
 
@@ -462,8 +421,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination is outside the bag directory" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / ".." / "path" / "to" / "file-copy.txt"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("../path/to/file-copy.txt")
+      val dest = bag.baseDir / relativeDest.toString
 
       dest shouldNot exist
 
@@ -478,8 +437,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination already exists" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "metadata" / "dataset.xml"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("metadata/dataset.xml")
+      val dest = bag.baseDir / relativeDest.toString
 
       dest should exist
       val oldContent = dest.contentAsString
@@ -496,8 +455,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination points to bag/bag-info.txt, which was removed first" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "bag-info.txt"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("bag-info.txt")
+      val dest = bag.baseDir / relativeDest.toString
 
       dest.delete()
 
@@ -514,8 +473,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination points to bag/bagit.txt, which was removed first" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "bagit.txt"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("bagit.txt")
+      val dest = bag.baseDir / relativeDest.toString
 
       dest.delete()
 
@@ -532,8 +491,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination points to bag/fetch.txt, which was removed first" in {
       val bag = fetchBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "fetch.txt"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("fetch.txt")
+      val dest = bag.baseDir / relativeDest.toString
 
       dest.delete()
 
@@ -550,8 +509,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination points to bag/manifest-XXX.txt, which was removed first" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "manifest-sha1.txt"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("manifest-sha1.txt")
+      val dest = bag.baseDir / relativeDest.toString
 
       dest.delete()
 
@@ -568,8 +527,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     it should "fail when the destination points to bag/tagmanifest-XXX.txt, which was removed first" in {
       val bag = simpleBagV0()
       val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-      val relativeDest: RelativePath = _ / "tagmanifest-sha1.txt"
-      val dest = relativeDest(bag)
+      val relativeDest = Paths.get("tagmanifest-sha1.txt")
+      val dest = bag.baseDir / relativeDest.toString
 
       dest.delete()
 
@@ -584,8 +543,8 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     }
   }
 
-  "addTagFile with InputStream and RelativePath" should behave like addTagFile(
-    bag => file => relativeDest => file.inputStream()(bag.addTagFile(_)(relativeDest))
+  "addTagFile with InputStream" should behave like addTagFile(
+    bag => file => relativeDest => file.inputStream()(bag.addTagFile(_, relativeDest))
   )
 
   it should "fail when the given file is a directory" in {
@@ -595,30 +554,15 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     newDir / "file2.txt" createIfNotExists() writeText lipsum(2)
     newDir / "sub" / "file3.txt" createIfNotExists (createParents = true) writeText lipsum(3)
     newDir / "sub" / "subsub" / "file4.txt" createIfNotExists (createParents = true) writeText lipsum(4)
-    val relativeDest: RelativePath = _ / "path" / "to" / "newDir"
+    val relativeDest = Paths.get("path/to/newDir")
 
-    inside(newDir.inputStream()(bag.addTagFile(_)(relativeDest))) {
+    inside(newDir.inputStream()(bag.addTagFile(_, relativeDest))) {
       case Failure(e: IOException) =>
         e should have message "Is a directory"
     }
   }
 
-  "addTagFile with InputStream and java.nio.file.Path" should "forward to the overload with RelativePath" in {
-    val bag = simpleBagV0()
-    val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-    val relativeDest: RelativePath = _ / "metadata" / "temp" / "file-copy.txt"
-    val dest = relativeDest(bag)
-
-    dest shouldNot exist
-
-    file.inputStream()(bag.addTagFile(_, Paths.get("metadata/temp/file-copy.txt"))) shouldBe a[Success[_]]
-
-    dest should exist
-    dest.contentAsString shouldBe file.contentAsString
-    dest.sha1 shouldBe file.sha1
-  }
-
-  "addTagFile with File and RelativePath" should behave like addTagFile(_.addTagFile)
+  "addTagFile with File" should behave like addTagFile(bag => file => bag.addTagFile(file, _))
 
   it should "recursively add the files and folders in the directory to the bag" in {
     val bag = multipleManifestsBagV0()
@@ -628,10 +572,10 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val file3 = newDir / "sub1" / "file3.txt" createIfNotExists (createParents = true) writeText lipsum(3)
     val file4 = newDir / "sub1" / "sub1sub" / "file4.txt" createIfNotExists (createParents = true) writeText lipsum(4)
     val file5 = newDir / "sub2" / "file4.txt" createIfNotExists (createParents = true) writeText lipsum(5)
-    val relativeDest: RelativePath = _ / "path" / "to" / "newDir"
-    val dest = relativeDest(bag)
+    val relativeDest = Paths.get("path/to/newDir")
+    val dest = bag.baseDir / relativeDest.toString
 
-    inside(bag.addTagFile(newDir)(relativeDest)) {
+    inside(bag.addTagFile(newDir, relativeDest)) {
       case Success(resultBag) =>
         val files = Set(file1, file2, file3, file4, file5)
           .map(file => dest / newDir.relativize(file).toString)
@@ -647,28 +591,13 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     }
   }
 
-  "addTagFile with File and java.nio.file.Path" should "forward to the overload with RelativePath" in {
-    val bag = simpleBagV0()
-    val file = testDir / "file.txt" createIfNotExists() writeText lipsum(3)
-    val relativeDest: RelativePath = _ / "metadata" / "temp" / "file-copy.txt"
-    val dest = relativeDest(bag)
-
-    dest shouldNot exist
-
-    bag.addTagFile(file, Paths.get("metadata/temp/file-copy.txt")) shouldBe a[Success[_]]
-
-    dest should exist
-    dest.contentAsString shouldBe file.contentAsString
-    dest.sha1 shouldBe file.sha1
-  }
-
-  "removeTagFile with RelativePath" should "remove a tag file from the bag" in {
+  "removeTagFile" should "remove a tag file from the bag" in {
     val bag = simpleBagV0()
     val file = bag / "metadata" / "dataset.xml"
 
     file should exist
 
-    bag.removeTagFile(_ / "metadata" / "dataset.xml") shouldBe a[Success[_]]
+    bag.removeTagFile(Paths.get("metadata/dataset.xml")) shouldBe a[Success[_]]
     file shouldNot exist
     file.parent shouldBe bag / "metadata"
     file.parent should exist
@@ -681,7 +610,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     bag.tagManifests(ChecksumAlgorithm.SHA1) should contain key file
     bag.tagManifests(ChecksumAlgorithm.SHA256) should contain key file
 
-    inside(bag.removeTagFile(_ / "metadata" / "dataset.xml")) {
+    inside(bag.removeTagFile(Paths.get("metadata/dataset.xml"))) {
       case Success(resultBag) =>
         resultBag.tagManifests(ChecksumAlgorithm.SHA1) shouldNot contain key file
         resultBag.tagManifests(ChecksumAlgorithm.SHA256) shouldNot contain key file
@@ -693,12 +622,12 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     val file = testDir / "a.txt" createIfNotExists (createParents = true) writeText "content of file a"
     val destination = bag / "path" / "to" / "file" / "a.txt"
 
-    bag.addTagFile(file)(_ / "path" / "to" / "file" / "a.txt") shouldBe a[Success[_]]
+    bag.addTagFile(file, Paths.get("path/to/file/a.txt")) shouldBe a[Success[_]]
 
     destination should exist
     bag.tagManifests(ChecksumAlgorithm.SHA1) should contain key destination
 
-    inside(bag.removeTagFile(_ / "path" / "to" / "file" / "a.txt")) {
+    inside(bag.removeTagFile(Paths.get("path/to/file/a.txt"))) {
       case Success(resultBag) =>
         resultBag.tagManifests(ChecksumAlgorithm.SHA1) shouldNot contain key destination
 
@@ -717,7 +646,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
 
     file shouldNot exist
 
-    inside(bag.removeTagFile(_ / "doesnotexist.txt")) {
+    inside(bag.removeTagFile(Paths.get("doesnotexist.txt"))) {
       case Failure(e: NoSuchFileException) => e should have message file.toString
     }
   }
@@ -729,7 +658,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     file should exist
     file.isChildOf(bag.data) shouldBe true
 
-    inside(bag.removeTagFile(_ / "data" / "x")) {
+    inside(bag.removeTagFile(Paths.get("data/x"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove '$file' since it is a child of the bag/data directory"
     }
@@ -742,19 +671,19 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     file should exist
     file.isChildOf(bag) shouldBe false
 
-    inside(bag.removeTagFile(_ / ".." / "temp.txt")) {
+    inside(bag.removeTagFile(Paths.get("../temp.txt"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove '$file' since it is not a child of the bag directory"
     }
   }
 
-  it should "fail when the file to remove is the bag directory itself" in pendingUntilFixed {
+  it should "fail when the file to remove is the bag directory itself" in {
     val bag = simpleBagV0()
 
     bag.baseDir should exist
-    bag.isChildOf(bag) shouldBe false // TODO why does this actually return true??? - https://github.com/pathikrit/better-files/issues/247
+    bag.isChildOf(bag) shouldBe false
 
-    inside(bag.removeTagFile(x => x)) {
+    inside(bag.removeTagFile(Paths.get(""))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message "cannot remove the whole bag"
     }
@@ -767,7 +696,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     file should exist
     file.isChildOf(bag) shouldBe true
 
-    inside(bag.removeTagFile(_ / "bag-info.txt")) {
+    inside(bag.removeTagFile(Paths.get("bag-info.txt"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove bag specific file '$file'"
     }
@@ -780,7 +709,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     file should exist
     file.isChildOf(bag) shouldBe true
 
-    inside(bag.removeTagFile(_ / "bagit.txt")) {
+    inside(bag.removeTagFile(Paths.get("bagit.txt"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove bag specific file '$file'"
     }
@@ -793,7 +722,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     file should exist
     file.isChildOf(bag) shouldBe true
 
-    inside(bag.removeTagFile(_ / "fetch.txt")) {
+    inside(bag.removeTagFile(Paths.get("fetch.txt"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove bag specific file '$file'"
     }
@@ -806,7 +735,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     file should exist
     file.isChildOf(bag) shouldBe true
 
-    inside(bag.removeTagFile(_ / "manifest-sha1.txt")) {
+    inside(bag.removeTagFile(Paths.get("manifest-sha1.txt"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove manifest file '$file'"
     }
@@ -819,7 +748,7 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     file should exist
     file.isChildOf(bag) shouldBe true
 
-    inside(bag.removeTagFile(_ / "tagmanifest-sha1.txt")) {
+    inside(bag.removeTagFile(Paths.get("tagmanifest-sha1.txt"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove tagmanifest file '$file'"
     }
@@ -832,21 +761,9 @@ class ManifestSpec extends TestSupportFixture with TestBags with BagMatchers wit
     dir should exist
     dir.isChildOf(bag) shouldBe true
 
-    inside(bag.removeTagFile(_ / "metadata")) {
+    inside(bag.removeTagFile(Paths.get("metadata"))) {
       case Failure(e: IllegalArgumentException) =>
         e should have message s"cannot remove directory '$dir'; you can only remove files"
     }
-  }
-
-  "removeTagFile with java.nio.file.Path" should "forward to the overload with RelativePath" in {
-    val bag = simpleBagV0()
-    val file = bag / "metadata" / "dataset.xml"
-
-    file should exist
-
-    bag.removeTagFile(Paths.get("metadata/dataset.xml")) shouldBe a[Success[_]]
-    file shouldNot exist
-    file.parent shouldBe bag / "metadata"
-    file.parent should exist
   }
 }
