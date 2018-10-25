@@ -28,8 +28,8 @@ import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import org.scalatest.tagobjects.Retryable
 
-import scala.util.{ Failure, Success }
 import scala.language.existentials
+import scala.util.{ Failure, Success }
 
 class SaveSpec extends TestSupportFixture
   with TestBags

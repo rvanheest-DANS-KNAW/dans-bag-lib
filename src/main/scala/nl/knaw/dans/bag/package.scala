@@ -26,4 +26,18 @@ package object bag {
   type MimeType = String
 
   implicit def betterFileToPath(file: File): Path = file.path
+
+  object ImportOption extends Enumeration {
+
+    type ImportOption = Value
+    val COPY: ImportOption = Value
+
+    /** Falls back on copy+delete if an ATOMIC_MOVE is not possible, for example due to different mounts.
+     * In case of an interrupt a copy might have been completed without the delete.
+     */
+    val MOVE: ImportOption = Value
+
+    /** Fails if source and target are on different mounts. */
+    val ATOMIC_MOVE: ImportOption = Value
+  }
 }

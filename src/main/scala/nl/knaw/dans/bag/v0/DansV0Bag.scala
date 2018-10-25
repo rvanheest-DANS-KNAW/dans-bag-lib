@@ -18,7 +18,7 @@ package nl.knaw.dans.bag.v0
 import java.io.InputStream
 import java.net.{ HttpURLConnection, URI, URL, URLConnection }
 import java.nio.charset.Charset
-import java.nio.file.{ FileAlreadyExistsException, NoSuchFileException, Path, Files => jFiles }
+import java.nio.file.{ AtomicMoveNotSupportedException, FileAlreadyExistsException, NoSuchFileException, Path, StandardCopyOption, Files => jFiles }
 import java.util.{ UUID, Set => jSet }
 
 import better.files.{ CloseableOps, Disposable, Dispose, File }
@@ -31,6 +31,7 @@ import gov.loc.repository.bagit.writer.{ BagitFileWriter, FetchWriter, ManifestW
 import nl.knaw.dans.bag.ChecksumAlgorithm.{ ChecksumAlgorithm, locDeconverter }
 import nl.knaw.dans.bag.v0.metadata.files.FilesXmlItem
 import nl.knaw.dans.bag.v0.metadata.{ Metadata, MetadataElement }
+import nl.knaw.dans.bag.ImportOption.{ ATOMIC_MOVE, COPY, ImportOption, MOVE }
 import nl.knaw.dans.bag.{ ChecksumAlgorithm, DansBag, FetchItem, betterFileToPath }
 import org.joda.time.DateTime
 import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
@@ -462,18 +463,15 @@ class DansV0Bag private(private[v0] val locBag: LocBag,
    * @inheritdoc
    */
   override def addPayloadFile(inputStream: InputStream, pathInData: Path): Try[DansV0Bag] = Try {
-    val file: File = data / pathInData.toString
+    val dest: File = data / pathInData.toString
+    mustNotExistInBag(dest)
+    mustBeChildOfBagData(dest)
+    mustNotBeFetchFile(dest)
 
-    if (file.exists)
-      throw new FileAlreadyExistsException(file.toString)
-    if (!data.isParentOf(file))
-      throw new IllegalArgumentException(s"pathInData '$file' is supposed to point to a file that is a child of the bag/data directory")
-    if (fetchFiles.map(_.file) contains file)
-      throw new FileAlreadyExistsException(file.toString(), null, "file already present in bag as a fetch file")
+    dest.parent.createDirectories()
 
-    file.parent.createDirectories()
-
-    addFile(inputStream, file, locBag.getPayLoadManifests)
+    jFiles.copy(inputStream, dest)
+    addCheckSum(dest, locBag.getPayLoadManifests)
 
     this
   }
@@ -481,10 +479,43 @@ class DansV0Bag private(private[v0] val locBag: LocBag,
   /**
    * @inheritdoc
    */
-  override def addPayloadFile(src: File, pathInData: Path): Try[DansV0Bag] = Try {
-    addFile(src, pathInData)(bag => is => path => bag.addPayloadFile(is, path))
+  override def addPayloadFile(src: File, pathInData: Path)
+                             (implicit importOption: ImportOption): Try[DansV0Bag] = Try {
+    val dest = data / pathInData.toString
+    if (dest == data && importOption == COPY) { // exception to the else branch
+      // allow to copy the content of a directory to the root of an empty data directory
+      if (data.nonEmpty)
+        throw new IllegalArgumentException("The data directory must be empty to receive content of a directory.")
+      if (!src.isDirectory)
+        throw new IllegalArgumentException(s"The data directory can only receive content of a directory, got: $src")
+    }
+    else {
+      mustNotExistInBag(dest)
+      mustBeChildOfBagData(dest)
+    }
+    mustNotBeFetchFile(dest)
+    importOption match {
+      case COPY => addFile(src, pathInData)(_.addPayloadFile)
+      case MOVE => movePayloadFile(src, dest)
+      case ATOMIC_MOVE => movePayloadFileAtomic(src, dest)
+    }
 
     this
+  }
+
+  private def mustNotExistInBag(dest: File): Unit = {
+    if (dest.exists)
+      throw new FileAlreadyExistsException(dest.toString)
+  }
+
+  private def mustNotBeFetchFile(dest: File): Unit = {
+    if (fetchFiles.map(_.file) contains dest)
+      throw new FileAlreadyExistsException(dest.toString(), null, "file already present in bag as a fetch file")
+  }
+
+  private def mustBeChildOfBagData(dest: File): Unit = {
+    if (!data.isParentOf(dest))
+      throw new IllegalArgumentException(s"pathInData '$dest' is supposed to point to a file that is a child of the bag/data directory")
   }
 
   /**
@@ -495,8 +526,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag,
 
     if (file.notExists)
       throw new NoSuchFileException(file.toString)
-    if (!data.isParentOf(file))
-      throw new IllegalArgumentException(s"pathInData '$file' is supposed to point to a file that is a child of the bag/data directory")
+    mustBeChildOfBagData(file)
     if (file.isDirectory)
       throw new IllegalArgumentException(s"cannot remove directory '$file'; you can only remove files")
 
@@ -517,8 +547,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag,
   override def addTagFile(inputStream: InputStream, pathInBag: Path): Try[DansV0Bag] = Try {
     val file = baseDir / pathInBag.toString
 
-    if (file.exists)
-      throw new FileAlreadyExistsException(file.toString)
+    mustNotExistInBag(file)
     if (data.isParentOf(file))
       throw new IllegalArgumentException(s"cannot add a tag file like '$file' to the bag/data directory")
     if (!baseDir.isParentOf(file))
@@ -548,7 +577,8 @@ class DansV0Bag private(private[v0] val locBag: LocBag,
     // in which case no directories are created
     file.parent.createDirectories()
 
-    addFile(inputStream, file, locBag.getTagManifests)
+    jFiles.copy(inputStream, file)
+    addCheckSum(file, locBag.getTagManifests)
 
     this
   }
@@ -557,7 +587,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag,
    * @inheritdoc
    */
   override def addTagFile(src: File, pathInBag: Path): Try[DansV0Bag] = Try {
-    addFile(src, pathInBag)(bag => is => path => bag.addTagFile(is, path))
+    addFile(src, pathInBag)(_.addTagFile)
 
     this
   }
@@ -832,16 +862,16 @@ class DansV0Bag private(private[v0] val locBag: LocBag,
       .toMap
   }
 
-  private def addFile(inputStream: InputStream, dest: File, manifests: jSet[LocManifest]): Unit = {
-    jFiles.copy(inputStream, dest)
-
-    for (manifest <- manifests.asScala;
-         algorithm: ChecksumAlgorithm = manifest.getAlgorithm)
-      manifest.getFileToChecksumMap.put(dest, dest.checksum(algorithm).toLowerCase)
+  private def addCheckSum(dest: File, manifests: jSet[LocManifest]): Unit = {
+    for (manifest <- manifests.asScala) {
+      val algorithm: ChecksumAlgorithm = manifest.getAlgorithm
+      val lowerCaseCheckSum = dest.checksum(algorithm).toLowerCase
+      manifest.getFileToChecksumMap.put(dest, lowerCaseCheckSum)
+    }
   }
 
   private def addFile(src: File, pathInBag: Path)
-                     (addFileAsStream: DansV0Bag => InputStream => Path => Try[DansV0Bag]): Unit = {
+                     (addFileAsStream: DansV0Bag => (InputStream, Path) => Try[DansV0Bag]): Unit = {
 
     def calculatePathInBagToFile(file: File)(pathInBagToFile: Path): Path = {
       pathInBagToFile resolve file.name
@@ -866,7 +896,7 @@ class DansV0Bag private(private[v0] val locBag: LocBag,
       else {
         assert(currentFile.isRegularFile, s"$currentFile is supposed to be a regular file")
 
-        currentFile.inputStream()(in => addFileAsStream(bag)(in)(pathInBagToFile)) match {
+        currentFile.inputStream()(in => addFileAsStream(bag)(in, pathInBagToFile)) match {
           case Success(resultBag) if backlog.isEmpty => resultBag // end of recursion, backtrack
           case Success(resultBag) =>
             val (nextFile, pathInBagToNextFile) = backlog.dequeue()
@@ -877,6 +907,31 @@ class DansV0Bag private(private[v0] val locBag: LocBag,
     }
 
     recursion(this, src, pathInBag)(mutable.Queue.empty)
+  }
+
+  private def movePayloadFile(src: File, dest: File): Unit = {
+    if (!src.isRegularFile)
+      throw new IllegalArgumentException(s"src cannot be moved non-atomically, as it is not a regular file: $src")
+
+    dest.parent.createDirectories()
+
+    // implicit copy/delete if src and dest are on different providers or mounts
+    src.moveTo(dest)
+    addCheckSum(dest, locBag.getPayLoadManifests)
+  }
+
+  private def movePayloadFileAtomic(src: File, dest: File): Unit = {
+    val srcProvider = src.fileSystem.provider()
+    if (srcProvider != dest.fileSystem.provider())
+      throw new AtomicMoveNotSupportedException(src.toString(), dest.toString(), s"Different providers, atomic move cannot take place")
+
+    dest.parent.createDirectories()
+    // avoid implicit copy/delete
+    srcProvider.move(src.path, dest, StandardCopyOption.ATOMIC_MOVE)
+    if (src.isRegularFile) addCheckSum(src, locBag.getPayLoadManifests)
+    else dest.walk().withFilter(!_.isDirectory).foreach(
+      addCheckSum(_, locBag.getPayLoadManifests)
+    )
   }
 
   private def removeFile(file: File, haltDeleteAt: File): Unit = {

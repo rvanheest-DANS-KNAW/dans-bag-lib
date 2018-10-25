@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.bag.fixtures
 
+import org.scalamock.scalatest.MockFactory
 import org.scalatest._
 import org.scalatest.enablers.Existence
 
@@ -23,6 +24,7 @@ trait TestSupportFixture extends FlatSpec
   with Inside
   with OptionValues
   with EitherValues
+  with MockFactory
   with Inspectors {
 
   implicit def existenceOfFile[FILE <: better.files.File]: Existence[FILE] = _.exists

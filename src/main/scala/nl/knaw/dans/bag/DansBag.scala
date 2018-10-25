@@ -24,6 +24,7 @@ import java.util.UUID
 import better.files.File
 import gov.loc.repository.bagit.domain.{ Version => LocVersion }
 import nl.knaw.dans.bag.ChecksumAlgorithm.ChecksumAlgorithm
+import nl.knaw.dans.bag.ImportOption.ImportOption
 import nl.knaw.dans.bag.v0.DansV0Bag
 import nl.knaw.dans.bag.v0.metadata.MetadataElement
 import org.joda.time.DateTime
@@ -458,7 +459,13 @@ trait DansBag {
    * the resolved destination is outside of the `bag/data` directory, this method will return a
    * `scala.util.Failure`. This method also adds the checksum of the new file to all payload manifests.
    *
-   * When `src` is a directory, each file will in that directory will be copied into the payload directory.
+   * The way of adding the payload file is determined by the implicit parameter `importOption`. By
+   * default this is set to `COPY`. If set to `MOVE`, it will move the file if both source and
+   * destination are on the same mount, but will copy/delete otherwise. If set to `ATOMIC_MOVE`, it
+   * will move the file if both source and destination are on the same mount, but fail otherwise.
+   *
+   * When `src` is a directory, each file in that directory will be copied into the payload directory.
+   * If `MOVE` is selected for `importOption`, importing a directory structure is not allowed.
    *
    * Please note that fetch files are also considered part of the payload files. Therefore it is not
    * allowed to add a payload file using this method that is already declared in `fetch.txt`.
@@ -474,11 +481,13 @@ trait DansBag {
    *   // add a directory of files
    *   bag.addPayloadFile(srcDir, Paths.get("path/to/some/directory"))
    * }}}
-   * @param src        the source of the new file to be added to the bag
-   * @param pathInData the path relative to the `bag/data` directory where the new file is being placed
+   * @param src          the source of the new file to be added to the bag
+   * @param pathInData   the path relative to the `bag/data` directory where the new file is being placed
+   * @param importOption the method of adding the payload file, either `COPY`, `MOVE` or `ATOMIC_MOVE`
    * @return this bag, with the added checksums of the new payload file
    */
-  def addPayloadFile(src: File, pathInData: Path): Try[DansBag]
+  def addPayloadFile(src: File, pathInData: Path)
+                    (implicit importOption: ImportOption = ImportOption.COPY): Try[DansBag]
 
   /**
    * Remove the payload file (relative to the `bag/data` directory) from the bag. This also removes
