@@ -21,7 +21,7 @@ import java.nio.charset.Charset
 import java.nio.file.{ AtomicMoveNotSupportedException, FileAlreadyExistsException, NoSuchFileException, Path, StandardCopyOption, Files => jFiles }
 import java.util.{ UUID, Set => jSet }
 
-import better.files.{ CloseableOps, Disposable, Dispose, File }
+import better.files._
 import gov.loc.repository.bagit.creator.BagCreator
 import gov.loc.repository.bagit.domain.{ Version, Bag => LocBag, FetchItem => LocFetchItem, Manifest => LocManifest, Metadata => LocMetadata }
 import gov.loc.repository.bagit.reader.BagReader
