@@ -34,7 +34,8 @@
     <description>Library for creating, reading and mutating DANS bags</description>
 
     <scm>
-        <developerConnection>scm:git:https://github.com/DANS-KNAW/${project.artifactId}</developerConnection>
+        <!-- ATTENTION GitHub repo name is *not* the project.artifactId -->
+        <developerConnection>scm:git:https://github.com/DANS-KNAW/dans-bag-lib</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
