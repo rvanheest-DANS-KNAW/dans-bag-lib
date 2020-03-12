@@ -27,7 +27,7 @@
 
     <groupId>nl.knaw.dans.lib</groupId>
     <artifactId>dans-bag-lib_2.12</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <inceptionYear>2018</inceptionYear>
     <name>DANS Bag Library</name>
@@ -36,7 +36,7 @@
     <scm>
         <!-- ATTENTION GitHub repo name is *not* the project.artifactId -->
         <developerConnection>scm:git:https://github.com/DANS-KNAW/dans-bag-lib</developerConnection>
-        <tag>v1.0.0</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <dependencies>
