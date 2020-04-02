@@ -17,7 +17,8 @@ package nl.knaw.dans.bag.fixtures
 
 import java.net.{ HttpURLConnection, URL }
 
-import org.scalatest.{ Matchers, Outcome, Retries, TestSuite }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{ Outcome, Retries, TestSuite }
 
 import scala.util.Try
 

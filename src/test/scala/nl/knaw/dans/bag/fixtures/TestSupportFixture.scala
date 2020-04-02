@@ -16,10 +16,12 @@
 package nl.knaw.dans.bag.fixtures
 
 import org.scalamock.scalatest.MockFactory
-import org.scalatest._
+import org.scalatest.{ EitherValues, Inside, Inspectors, OptionValues }
 import org.scalatest.enablers.Existence
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-trait TestSupportFixture extends FlatSpec
+trait TestSupportFixture extends AnyFlatSpec
   with Matchers
   with Inside
   with OptionValues

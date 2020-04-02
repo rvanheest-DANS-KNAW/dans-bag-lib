@@ -24,14 +24,14 @@ import gov.loc.repository.bagit.reader.{ FetchReader, ManifestReader, MetadataRe
 import nl.knaw.dans.bag.ChecksumAlgorithm._
 import nl.knaw.dans.bag.FetchItem
 import nl.knaw.dans.bag.betterFileToPath
-import org.scalatest.FlatSpecLike
+import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.{ MatchResult, Matcher }
 
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
 
 trait BagMatchers {
-  this: FlatSpecLike =>
+  this: AnyFlatSpecLike =>
 
   type BagInfoEntry = (String, Seq[String])
   class ContainInBagInfoOnly(bagInfos: Seq[BagInfoEntry]) extends Matcher[File] {
