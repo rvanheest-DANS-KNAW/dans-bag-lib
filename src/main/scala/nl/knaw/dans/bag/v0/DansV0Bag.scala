@@ -19,9 +19,10 @@ import java.io.InputStream
 import java.net.{ HttpURLConnection, URI, URL, URLConnection }
 import java.nio.charset.Charset
 import java.nio.file.{ AtomicMoveNotSupportedException, FileAlreadyExistsException, NoSuchFileException, Path, StandardCopyOption, Files => jFiles }
+import java.util.concurrent.ExecutorService
 import java.util.{ UUID, Set => jSet }
 
-import better.files.{DisposeableExtensions, Disposable, Dispose, File }
+import better.files.{ Disposable, Dispose, DisposeableExtensions, File }
 import gov.loc.repository.bagit.creator.BagCreator
 import gov.loc.repository.bagit.domain.{ Version, Bag => LocBag, FetchItem => LocFetchItem, Manifest => LocManifest, Metadata => LocMetadata }
 import gov.loc.repository.bagit.reader.BagReader
@@ -675,11 +676,21 @@ class DansV0Bag private(private[v0] val locBag: LocBag) extends DansBag {
       .toEither.left.map(_.getMessage)
   }
 
+  override def isComplete(executor: ExecutorService): Either[String, Unit] = {
+    Try { new Dispose(new BagVerifier(executor)).apply(_.isComplete(this.locBag, false)) }
+      .toEither.left.map(_.getMessage)
+  }
+
   /**
    * @inheritdoc
    */
   override def isValid: Either[String, Unit] = {
     Try { new Dispose(new BagVerifier()).apply(_.isValid(this.locBag, false)) }
+      .toEither.left.map(_.getMessage)
+  }
+
+  override def isValid(executor: ExecutorService): Either[String, Unit] = {
+    Try { new Dispose(new BagVerifier(executor)).apply(_.isValid(this.locBag, false)) }
       .toEither.left.map(_.getMessage)
   }
 

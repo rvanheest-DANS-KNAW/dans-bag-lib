@@ -20,6 +20,7 @@ import java.net.{ URI, URL }
 import java.nio.charset.Charset
 import java.nio.file.Path
 import java.util.UUID
+import java.util.concurrent.ExecutorService
 
 import better.files.File
 import gov.loc.repository.bagit.domain.{ Version => LocVersion }
@@ -619,6 +620,8 @@ trait DansBag {
    */
   def isComplete: Either[String, Unit]
 
+  def isComplete(executor: ExecutorService): Either[String, Unit]
+
   /**
    * Verifies if a bag is valid.
    * According to the BagIt v16 specs, a bag is valid when:
@@ -636,6 +639,8 @@ trait DansBag {
    *         the bag is not valid)
    */
   def isValid: Either[String, Unit]
+
+  def isValid(executor: ExecutorService): Either[String, Unit]
 }
 
 object DansBag {
