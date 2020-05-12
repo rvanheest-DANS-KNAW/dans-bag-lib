@@ -64,7 +64,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.TAG_FILES_ENCODING,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM
@@ -116,7 +115,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -140,7 +138,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -178,7 +175,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -235,7 +231,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -269,7 +264,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -303,7 +297,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -347,7 +340,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -385,7 +377,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -425,7 +416,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -463,7 +453,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -502,7 +491,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -560,7 +548,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )
@@ -589,7 +576,6 @@ class SaveSpec extends TestSupportFixture
     // validate bag
     BagVerifier.quicklyVerify(bag.locBag)
     BagLinter.lintBag(bag.path) should contain only(
-      BagitWarning.DIFFERENT_CASE, // TODO https://github.com/LibraryOfCongress/bagit-java/issues/119
       BagitWarning.OLD_BAGIT_VERSION,
       BagitWarning.WEAK_CHECKSUM_ALGORITHM,
     )

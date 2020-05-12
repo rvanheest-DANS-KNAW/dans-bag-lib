@@ -55,7 +55,7 @@ class ValidationSpec extends TestSupportFixture with TestBags with FetchFileMeta
     bag.isComplete.left.value shouldBe s"File [${ bag / "bagit.txt" }] should exist but it doesn't!"
   }
 
-  it should "fail when no data/ directory is present" in pendingUntilFixed { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/123
+  it should "fail when no data/ directory is present" in {
     val bag = simpleBagV0()
 
     bag.data.delete()
@@ -192,7 +192,7 @@ class ValidationSpec extends TestSupportFixture with TestBags with FetchFileMeta
     bag.isValid.left.value shouldBe s"File [${ bag / "bagit.txt" }] should exist but it doesn't!"
   }
 
-  it should "fail when no data/ directory is present" in pendingUntilFixed { // TODO https://github.com/LibraryOfCongress/bagit-java/issues/123
+  it should "fail when no data/ directory is present" in {
     val bag = simpleBagV0()
 
     bag.data.delete()
